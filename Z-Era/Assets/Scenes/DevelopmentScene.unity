@@ -156,7 +156,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: 182b7f11db452bc458d35a6c9eced06f, type: 3}
       propertyPath: m_Name
-      value: Arm_Rifle_AK47
+      value: AK47
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: 182b7f11db452bc458d35a6c9eced06f, type: 3}
       propertyPath: m_Layer
@@ -435,7 +435,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: aee7ab4e220da554499ec058d8da6ea3, type: 3}
       propertyPath: m_Name
-      value: Arm_SMG_Uzi
+      value: Uzi
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: aee7ab4e220da554499ec058d8da6ea3, type: 3}
       propertyPath: m_Layer
@@ -700,7 +700,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: 21ec48bb14b3d6243b8b764b854a8ced, type: 3}
       propertyPath: m_Name
-      value: Arm_SMG_P90
+      value: P90
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: 21ec48bb14b3d6243b8b764b854a8ced, type: 3}
       propertyPath: m_Layer
@@ -1067,7 +1067,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: e5e1aebe4e6b40743ab0be078564260a, type: 3}
       propertyPath: m_Name
-      value: Arm_Pistol_Tec-9
+      value: Tec9
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: e5e1aebe4e6b40743ab0be078564260a, type: 3}
       propertyPath: m_Layer
@@ -1600,7 +1600,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: ee465ab9a24fe4949b0322fd28a3c579, type: 3}
       propertyPath: m_Name
-      value: Arm_SMG_Vector
+      value: Vector
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: ee465ab9a24fe4949b0322fd28a3c579, type: 3}
       propertyPath: m_Layer
@@ -1837,6 +1837,111 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1224504179}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &483094476 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100012, guid: 181b9131338982b48bcf5ccf538d6a75,
+    type: 3}
+  m_PrefabInstance: {fileID: 1284738857}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &718368087 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100012, guid: 56ec0b9a5b8762642811ea26a5242e04,
+    type: 3}
+  m_PrefabInstance: {fileID: 1321969238}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &718368089
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 718368087}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05ffc592deca1f5469503b1c5674b3d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gunDates:
+  - gunType: 0
+    fireMode: 0
+    magezineSize: 20
+    maxCarriedAmmo: 240
+    singleFireRate: 0.2
+    fullAutoFireRate: 0
+    damage: 15
+    range: 50
+  - gunType: 1
+    fireMode: 0
+    magezineSize: 7
+    maxCarriedAmmo: 70
+    singleFireRate: 0.5
+    fullAutoFireRate: 0
+    damage: 40
+    range: 70
+  - gunType: 2
+    fireMode: 0
+    magezineSize: 18
+    maxCarriedAmmo: 180
+    singleFireRate: 0.2
+    fullAutoFireRate: 0
+    damage: 20
+    range: 50
+  - gunType: 3
+    fireMode: 1
+    magezineSize: 30
+    maxCarriedAmmo: 180
+    singleFireRate: 0.3
+    fullAutoFireRate: 0.2
+    damage: 25
+    range: 60
+  - gunType: 4
+    fireMode: 1
+    magezineSize: 30
+    maxCarriedAmmo: 240
+    singleFireRate: 0.3
+    fullAutoFireRate: 0.15
+    damage: 20
+    range: 65
+  - gunType: 5
+    fireMode: 0
+    magezineSize: 7
+    maxCarriedAmmo: 42
+    singleFireRate: 1.5
+    fullAutoFireRate: 0
+    damage: 100
+    range: 30
+  - gunType: 6
+    fireMode: 1
+    magezineSize: 20
+    maxCarriedAmmo: 240
+    singleFireRate: 0.05
+    fullAutoFireRate: 0.05
+    damage: 15
+    range: 35
+  - gunType: 7
+    fireMode: 1
+    magezineSize: 25
+    maxCarriedAmmo: 300
+    singleFireRate: 0.12
+    fullAutoFireRate: 0
+    damage: 18
+    range: 45
+  - gunType: 8
+    fireMode: 1
+    magezineSize: 50
+    maxCarriedAmmo: 400
+    singleFireRate: 0.1
+    fullAutoFireRate: 0.1
+    damage: 20
+    range: 50
+  - gunType: 9
+    fireMode: 1
+    magezineSize: 30
+    maxCarriedAmmo: 300
+    singleFireRate: 0.15
+    fullAutoFireRate: 0.15
+    damage: 23
+    range: 50
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1920,7 +2025,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: 8bdb3f4eab1102e49a2d340827a72d6d, type: 3}
       propertyPath: m_Name
-      value: Arm_ShotGun_XM1014
+      value: XM1014
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: 8bdb3f4eab1102e49a2d340827a72d6d, type: 3}
       propertyPath: m_Layer
@@ -2353,7 +2458,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: 18bd21b59e7670a4cab7bd70b7565cf0, type: 3}
       propertyPath: m_Name
-      value: Arm_SMG_MP5
+      value: MP5
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: 18bd21b59e7670a4cab7bd70b7565cf0, type: 3}
       propertyPath: m_Layer
@@ -2622,7 +2727,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: 181b9131338982b48bcf5ccf538d6a75, type: 3}
       propertyPath: m_Name
-      value: Arm_Pistol_DesertEagle
+      value: DesertEagle
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: 181b9131338982b48bcf5ccf538d6a75, type: 3}
       propertyPath: m_Layer
@@ -2839,7 +2944,11 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100012, guid: 181b9131338982b48bcf5ccf538d6a75,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1712304443}
   m_SourcePrefab: {fileID: 100100000, guid: 181b9131338982b48bcf5ccf538d6a75, type: 3}
 --- !u!1001 &1321969238
 PrefabInstance:
@@ -2875,7 +2984,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: 56ec0b9a5b8762642811ea26a5242e04, type: 3}
       propertyPath: m_Name
-      value: Arm_Pistol_Glock
+      value: Glock
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: 56ec0b9a5b8762642811ea26a5242e04, type: 3}
       propertyPath: m_Layer
@@ -3096,7 +3205,11 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100012, guid: 56ec0b9a5b8762642811ea26a5242e04,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 718368089}
   m_SourcePrefab: {fileID: 100100000, guid: 56ec0b9a5b8762642811ea26a5242e04, type: 3}
 --- !u!4 &1350855667 stripped
 Transform:
@@ -3251,6 +3364,99 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1284738857}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1712304443
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 483094476}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05ffc592deca1f5469503b1c5674b3d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gunDates:
+  - gunType: 0
+    fireMode: 0
+    magezineSize: 20
+    maxCarriedAmmo: 240
+    singleFireRate: 0.2
+    fullAutoFireRate: 0
+    damage: 15
+    range: 50
+  - gunType: 1
+    fireMode: 0
+    magezineSize: 7
+    maxCarriedAmmo: 70
+    singleFireRate: 0.5
+    fullAutoFireRate: 0
+    damage: 40
+    range: 70
+  - gunType: 2
+    fireMode: 0
+    magezineSize: 18
+    maxCarriedAmmo: 180
+    singleFireRate: 0.2
+    fullAutoFireRate: 0
+    damage: 20
+    range: 50
+  - gunType: 3
+    fireMode: 1
+    magezineSize: 30
+    maxCarriedAmmo: 180
+    singleFireRate: 0.3
+    fullAutoFireRate: 0.2
+    damage: 25
+    range: 60
+  - gunType: 4
+    fireMode: 1
+    magezineSize: 30
+    maxCarriedAmmo: 240
+    singleFireRate: 0.3
+    fullAutoFireRate: 0.15
+    damage: 20
+    range: 65
+  - gunType: 5
+    fireMode: 0
+    magezineSize: 7
+    maxCarriedAmmo: 42
+    singleFireRate: 1.5
+    fullAutoFireRate: 0
+    damage: 100
+    range: 30
+  - gunType: 6
+    fireMode: 1
+    magezineSize: 20
+    maxCarriedAmmo: 240
+    singleFireRate: 0.05
+    fullAutoFireRate: 0.05
+    damage: 15
+    range: 35
+  - gunType: 7
+    fireMode: 1
+    magezineSize: 25
+    maxCarriedAmmo: 300
+    singleFireRate: 0.12
+    fullAutoFireRate: 0
+    damage: 18
+    range: 45
+  - gunType: 8
+    fireMode: 1
+    magezineSize: 50
+    maxCarriedAmmo: 400
+    singleFireRate: 0.1
+    fullAutoFireRate: 0.1
+    damage: 20
+    range: 50
+  - gunType: 9
+    fireMode: 1
+    magezineSize: 30
+    maxCarriedAmmo: 300
+    singleFireRate: 0.15
+    fullAutoFireRate: 0.15
+    damage: 23
+    range: 50
 --- !u!4 &1905109106 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400012, guid: a95d583089688544a862556eafd1ba53,
@@ -3291,7 +3497,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: a95d583089688544a862556eafd1ba53, type: 3}
       propertyPath: m_Name
-      value: Arm_Rifle_A4M4
+      value: A4M4
       objectReference: {fileID: 0}
     - target: {fileID: 100012, guid: a95d583089688544a862556eafd1ba53, type: 3}
       propertyPath: m_Layer
