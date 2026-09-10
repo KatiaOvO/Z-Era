@@ -1942,6 +1942,72 @@ MonoBehaviour:
     fullAutoFireRate: 0.15
     damage: 23
     range: 50
+--- !u!114 &718368091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 718368087}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d55b1d104641e5141985852ff2f51185, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  reloadSound: {fileID: 0}
+  bulletSpawnPoint: {fileID: 0}
+  muzzleFlash: {fileID: 0}
+  weaponEffectConfigs:
+  - gunType: 0
+    shootSound: {fileID: 0}
+    reloadSound: {fileID: 0}
+    bulletSpawnPoint: {fileID: 0}
+    muzzleFlash: {fileID: 0}
+  - gunType: 1
+    shootSound: {fileID: 0}
+    reloadSound: {fileID: 0}
+    bulletSpawnPoint: {fileID: 0}
+    muzzleFlash: {fileID: 0}
+  - gunType: 2
+    shootSound: {fileID: 0}
+    reloadSound: {fileID: 0}
+    bulletSpawnPoint: {fileID: 0}
+    muzzleFlash: {fileID: 0}
+  - gunType: 3
+    shootSound: {fileID: 0}
+    reloadSound: {fileID: 0}
+    bulletSpawnPoint: {fileID: 0}
+    muzzleFlash: {fileID: 0}
+  - gunType: 4
+    shootSound: {fileID: 0}
+    reloadSound: {fileID: 0}
+    bulletSpawnPoint: {fileID: 0}
+    muzzleFlash: {fileID: 0}
+  - gunType: 5
+    shootSound: {fileID: 0}
+    reloadSound: {fileID: 0}
+    bulletSpawnPoint: {fileID: 0}
+    muzzleFlash: {fileID: 0}
+  - gunType: 6
+    shootSound: {fileID: 0}
+    reloadSound: {fileID: 0}
+    bulletSpawnPoint: {fileID: 0}
+    muzzleFlash: {fileID: 0}
+  - gunType: 7
+    shootSound: {fileID: 0}
+    reloadSound: {fileID: 0}
+    bulletSpawnPoint: {fileID: 0}
+    muzzleFlash: {fileID: 0}
+  - gunType: 8
+    shootSound: {fileID: 0}
+    reloadSound: {fileID: 0}
+    bulletSpawnPoint: {fileID: 0}
+    muzzleFlash: {fileID: 0}
+  - gunType: 9
+    shootSound: {fileID: 0}
+    reloadSound: {fileID: 0}
+    bulletSpawnPoint: {fileID: 0}
+    muzzleFlash: {fileID: 0}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -3210,6 +3276,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 718368089}
+    - targetCorrespondingSourceObject: {fileID: 100012, guid: 56ec0b9a5b8762642811ea26a5242e04,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 718368091}
   m_SourcePrefab: {fileID: 100100000, guid: 56ec0b9a5b8762642811ea26a5242e04, type: 3}
 --- !u!4 &1350855667 stripped
 Transform:
