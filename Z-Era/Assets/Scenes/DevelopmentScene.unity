@@ -1861,12 +1861,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05ffc592deca1f5469503b1c5674b3d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gunDates:
+  gunDatas:
   - gunType: 0
     fireMode: 0
     magezineSize: 20
-    maxCarriedAmmo: 240
-    singleFireRate: 0.2
+    maxCarriedAmmo: 20
+    singleFireRate: 0.1
     fullAutoFireRate: 0
     damage: 15
     range: 50
@@ -3376,7 +3376,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05ffc592deca1f5469503b1c5674b3d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gunDates:
+  gunDatas:
   - gunType: 0
     fireMode: 0
     magezineSize: 20

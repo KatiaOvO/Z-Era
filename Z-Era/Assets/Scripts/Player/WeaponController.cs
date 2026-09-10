@@ -31,7 +31,7 @@ public class GunData
     public GunType gunType;
     public FireMode fireMode;
     public int magezineSize;    // 弹匣容量
-    public int maxCarriedAmmo;  // 最大备弹数
+    public int maxCarriedAmmo;  // 最大携弹数
     public float singleFireRate;    // 单点射击间隔
     public float fullAutoFireRate;  //持续射击间隔
     public int damage;  // 伤害
@@ -48,25 +48,37 @@ public class WeaponController : MonoBehaviour
     #region 判断参数
     [Tooltip("行走判断参数")]
     private bool isWalk;
-    [Tooltip("开火判断参数")]
-    private bool isFire;
+    [Tooltip("单点开火判断参数")]
+    private bool isSingleFire;
+    [Tooltip("自动开火判断参数")]
+    private bool isAutoFire;
+    [Tooltip("单点开火限制参数")]
+    private bool singleFireTrigger;
+    [Tooltip("自动开火限制参数")]
+    private bool autoFireTrigger;
     [Tooltip("检视判断参数")]
     private bool isInspect;
     [Tooltip("匕首攻击判断参数")]
     private bool isKnifeAttack;
     [Tooltip("是否能开火判断参数")]
-    private bool isCanFire;
-    [Tooltip("弹匣是否完全打空")]
+    private bool canFire;
+    [Tooltip("是否能换弹判断参数")]
+    private bool canReload;
+    [Tooltip("换弹判断参数")]
+    private bool isReload;
+    [Tooltip("弹匣是否完全打空判断参数")]
     private bool isMagazineEmpty;
     #endregion
 
     #region 射击
-    [Tooltip("最大备弹子弹数")]
+    [Tooltip("最大携弹数")]
     private int maxCarriedAmmo;
+    [Tooltip("当前携弹数")]
+    private int currentCarriedAmmo;
+    [Tooltip("枪弹匣容量")]
+    private int magazineSize;
     [Tooltip("当前弹匣子弹数")]
     private int currentMagazineAmmo;
-    [Tooltip("枪支弹匣容量")]
-    private int magazineSize;
     [Tooltip("当前枪支类型")]
     private GunType currentGunType;
     [Tooltip("当前射击模式")]
@@ -82,10 +94,10 @@ public class WeaponController : MonoBehaviour
         new GunData
         {
             gunType = GunType.Glock,
-            fireMode = FireMode.SemiAuto,
+            fireMode = FireMode.FullAuto,
             magezineSize = 20,
             maxCarriedAmmo = 240,
-            singleFireRate = 0.2f,
+            singleFireRate = 0.1f,
             fullAutoFireRate = 0.0f,
             damage = 15,
             range = 50f
@@ -200,19 +212,24 @@ public class WeaponController : MonoBehaviour
     };
     #endregion
 
+    private void Awake()
+    {
+        GunInitialization();    // 避免每次切枪都初始化将当前武器充满子弹，故在Awake()中调用
+    }
+
     void Start()
     {
         animator = GetComponent<Animator>();
-        GunInitialization();
     }
 
     void Update()
     {
         ParameterJudgment();
         AnimatorController();
-        UpdateShootingState();
+        ShootingState();
+        HandleAmmo();
         // Debuglog
-        Debug.Log(currentMagazineAmmo + "/" + maxCarriedAmmo);
+        Debug.Log(currentMagazineAmmo + "/" + currentCarriedAmmo);
     }
 
     // 方法：参数判断
@@ -222,8 +239,12 @@ public class WeaponController : MonoBehaviour
         float v = Input.GetAxisRaw("Vertical");
         // 判断isWalking：按下移动键则为正在行走
         isWalk = h != 0 || v != 0;
-        // 判断isHipFire：按下左键则为开火
-        // isFire = Input.GetKeyDown(KeyCode.Mouse0);
+        // 判断isSingleFire：按下鼠标左键则为单点开火
+        isSingleFire = Input.GetKeyDown(KeyCode.Mouse0);
+        // 判断isAutoFire：持续按下鼠标左键则为自动开火
+        isAutoFire= Input.GetKey(KeyCode.Mouse0);
+        // 判断isReload：按下R键则为换弹
+        isReload = Input.GetKeyDown(KeyCode.R);
         // 判断isInspecting：按下V键则为检视武器
         isInspect = Input.GetKeyDown(KeyCode.V);
         // 判断isKnifeAttack：按下F键则为匕首攻击
@@ -233,10 +254,46 @@ public class WeaponController : MonoBehaviour
     // 方法：武器动画控制器
     private void AnimatorController()
     {
+        // 获取当前武器在枚举中的索引
+        int currentWeaponIndex = (int)currentGunType;
+        // 获取武器总数确定循环轮数
+        int weaponNum = gunDatas.Length;
+        // 循环：将动画器中的对应的武器图层的权重设置为1
+        // 遍历武器索引等于当前武器索引时，当前的遍历索引+1的动画器图层权重设置为1，其余设置为0
+        // 由于需要保留Base Layer，故Base Layer的图层索引为0，其余武器图层的索引需+1
+        for(int traverseWeaponIdex = 0; traverseWeaponIdex < weaponNum; traverseWeaponIdex ++)
+        {
+            if(traverseWeaponIdex == currentWeaponIndex)
+            {
+                animator.SetLayerWeight(traverseWeaponIdex + 1, 1);
+            }
+            else
+            {
+                animator.SetLayerWeight(traverseWeaponIdex + 1, 0);
+            }
+        }
+        // 播放指定动画时，只有播放完当前动画之后才能播放其他动画，包括：
         animator.SetBool("walk", isWalk);
-        if (isFire) animator.Play("Fire", 1, 0.0f);   // **修改**：若无后两个参数，即层级和从头（0%）开始播放，则无法实现快速连点射击
-        if (isInspect) animator.Play("Inspect", 1, 0.0f);
-        if (isKnifeAttack) animator.Play("KnifeAttack", 1, 0.0f);
+        if (isInspect) animator.Play("Inspect");
+        if (isKnifeAttack) animator.Play("KnifeAttack");
+        if(singleFireTrigger)
+        {
+            animator.Play("Fire");
+            singleFireTrigger = false;
+        }
+        else if(autoFireTrigger)
+        {
+            animator.Play("Fire");
+            autoFireTrigger = false;
+        }
+        if(canReload && isReload && currentMagazineAmmo == 0)
+        {
+            animator.Play("ReloadOutOfAmmo");
+        }
+        else if(canReload && isReload && currentMagazineAmmo > 0)
+        {
+            animator.Play("ReloadLeftAmmo");
+        }
     }
 
     // 方法：枪支初始化
@@ -264,62 +321,78 @@ public class WeaponController : MonoBehaviour
          */
         GunData currentGunData = gunDatas[(int)currentGunType];
         // 初始化枪支数据
-        magazineSize = currentGunData.magezineSize;
         maxCarriedAmmo = currentGunData.maxCarriedAmmo;
+        currentCarriedAmmo = maxCarriedAmmo;
+        magazineSize = currentGunData.magezineSize;
         currentMagazineAmmo = magazineSize; // 初始满弹匣
         currentFireMode = currentGunData.fireMode;
         lastFireTime = 0.0f;
     }
 
-    // 方法：射击状态判断 - 判断isFire
-    private void UpdateShootingState()
+    // 方法：射击状态实现
+    private void ShootingState()
     {
         GunData currentGunData = gunDatas[(int)currentGunType];
-        // 检测鼠标左键按下事件
-        if(Input.GetKeyDown(KeyCode.Mouse0))
+        // 单点射击（对于半自动或全自动武器都适用）
+        if (isSingleFire && currentMagazineAmmo > 0)
         {
-            // 根据武器类型设置射击状态
-            if(currentGunData.fireMode == FireMode.SemiAuto)
+            if (Time.time >= lastFireTime + currentGunData.singleFireRate)  // 只有当射击间隔满足时才允许射击
             {
-                // 半自动武器：单点射击
-                // 只有当射击间隔满足时才允许射击
-                if(Time.time >= lastFireTime + currentGunData.singleFireRate)
-                {
-                    isFire = true;  // 设置射击状态为true
-                    lastFireTime = Time.time;   // 更新最后射击时间
-                }
-                else
-                {
-                    // 全自动武器：持续射击
-                    // 按下鼠标左键就设置为true
-                    isFire = true;
-                }
+                singleFireTrigger = true;
+                currentMagazineAmmo--;  // 当前弹匣子弹数-1
+                lastFireTime = Time.time;   // 更新最后射击时间
             }
-
-            // 检测鼠标左键释放事件
-            if(Input.GetKeyUp(KeyCode.Mouse0))
-            {
-                // 释放鼠标左键，停止射击
-                isFire = false;
-            }
-
-            // 处理持续射击（仅全自动武器）
-            if(isFire && currentGunData.fireMode == FireMode.FullAuto)
+        }
+        // 自动射击（仅全自动武器）
+        if (currentGunData.fireMode == FireMode.FullAuto)
+        {
+            if(isAutoFire && currentMagazineAmmo > 0)
             {
                 // 检查射击间隔是否满足
-                if(Time.time >= lastFireTime + currentGunData.singleFireRate)
+                if (Time.time >= lastFireTime + currentGunData.fullAutoFireRate)
                 {
                     // 满足射击间隔，保持射击状态
-                    // 注意：这里不执行射击，只保持isFire为true
+                    autoFireTrigger = true;
+                    currentMagazineAmmo--;  // 当前弹匣子弹数-1
                     lastFireTime = Time.time;   // 更新最后射击时间
                 }
             }
+        }
+        // 检测鼠标左键释放事件
+        if (Input.GetKeyUp(KeyCode.Mouse0))
+        {
+            // 释放鼠标左键，停止射击
+            isSingleFire = false;
+            isAutoFire = false;
         }
     }
 
     // 方法：子弹管理
     private void HandleAmmo()
     {
-        
+        // 限制携弹数
+        if(currentCarriedAmmo >= maxCarriedAmmo)
+        {
+            currentCarriedAmmo = maxCarriedAmmo;
+        }
+        // 判断能否换弹
+        if (currentMagazineAmmo == magazineSize || currentCarriedAmmo == 0) canReload = false;
+        else canReload = true;
+        // 换弹计算
+        if (canReload && isReload)
+        {
+            // 1.当前弹匣子弹数 + 当前携弹数 > 弹匣容量
+            if (currentMagazineAmmo + currentCarriedAmmo > magazineSize)
+            {
+                currentCarriedAmmo -= (magazineSize - currentMagazineAmmo);
+                currentMagazineAmmo = magazineSize;
+            }
+            // 2.当前弹匣子弹数 + 当前携弹数 < 弹匣容量
+            if (currentMagazineAmmo + currentCarriedAmmo <= magazineSize)
+            {
+                currentMagazineAmmo += currentCarriedAmmo;
+                currentCarriedAmmo = 0;
+            }
+        }
     }
 }
