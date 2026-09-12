@@ -13,6 +13,8 @@ public class PlayerController : MonoBehaviour
     private Camera weaponCam;
     [Tooltip("武器挂载点")]
     private Transform weaponHolder;
+    [Tooltip("音源")]
+    private AudioSource audioSource;
     #endregion
 
     #region 角色属性
@@ -21,6 +23,8 @@ public class PlayerController : MonoBehaviour
     [Tooltip("重力")]
     public float gravity = -9.81f;
     private float verticalVelocity = 0f;
+    [Tooltip("行走音效")]
+    public AudioClip walkSound;
     #endregion
 
     #region 相机参数
@@ -39,6 +43,8 @@ public class PlayerController : MonoBehaviour
         weaponCam = transform.Find("WeaponCamera")?.GetComponent<Camera>();
         weaponHolder = transform.Find("WeaponHolder");
         Cursor.lockState = CursorLockMode.Locked;
+        audioSource = GetComponent<AudioSource>();
+        audioSource.clip = walkSound;
     }
 
     void Update()
@@ -52,6 +58,7 @@ public class PlayerController : MonoBehaviour
     {
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
+        bool isMoving = (h != 0 || v != 0);
         Vector3 moveDirection = (transform.right * h + transform.forward * v).normalized;
         // 处理重力
         if (characterController.isGrounded)
@@ -65,6 +72,21 @@ public class PlayerController : MonoBehaviour
         // 组合水平和垂直移动
         Vector3 move = moveDirection * walkSpeed + Vector3.up * verticalVelocity;
         characterController.Move(move * Time.deltaTime);
+        // 行走音效
+        if (isMoving && characterController.isGrounded)
+        {
+            if (!audioSource.isPlaying)
+            {
+                audioSource.Play();
+            }
+        }
+        else
+        {
+            if (audioSource.isPlaying)
+            {
+                audioSource.Stop();
+            }
+        }
     }
 
     // 方法：玩家相机视角

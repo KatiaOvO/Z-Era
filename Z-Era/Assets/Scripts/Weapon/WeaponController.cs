@@ -78,7 +78,7 @@ public class WeaponController : MonoBehaviour
     [Tooltip("枪弹匣容量")]
     private int magazineSize;
     [Tooltip("当前弹匣子弹数")]
-    private int currentMagazineAmmo;
+    public int currentMagazineAmmo;
     [Tooltip("当前枪支类型")]
     private GunType currentGunType;
     [Tooltip("当前射击模式")]
@@ -212,14 +212,19 @@ public class WeaponController : MonoBehaviour
     };
     #endregion
 
+    #region 脚本
+    private WeaponEffects weaponEffects;
+    #endregion
+
     private void Awake()
     {
-        GunInitialization();    // 避免每次切枪都初始化将当前武器充满子弹，故在Awake()中调用
+        WeaponInitialization();    // 避免每次切枪都初始化将当前武器充满子弹，故在Awake()中调用
     }
 
     void Start()
     {
         animator = GetComponent<Animator>();
+        weaponEffects = GetComponent<WeaponEffects>();
     }
 
     void Update()
@@ -286,40 +291,44 @@ public class WeaponController : MonoBehaviour
         if(singleFireTrigger)
         {
             animator.Play("Fire");
+            weaponEffects.ShootEffects();   // 调用weaponEffects.cs中的ShootEffects()方法，射击时产生特效
             currentMagazineAmmo--;  // 当前弹匣子弹数-1
             singleFireTrigger = false;
         }
         else if(autoFireTrigger)
         {
             animator.Play("Fire");
+            weaponEffects.ShootEffects();   // 调用weaponEffects.cs中的ShootEffects()方法，射击时产生特效
             currentMagazineAmmo--;  // 当前弹匣子弹数-1
             autoFireTrigger = false;
         }
         if(canReload && isReload && currentMagazineAmmo == 0)
         {
-            animator.Play("ReloadOutOfAmmo");
+            animator.Play("ReloadOutOfAmmo");   
+            weaponEffects.ReloadEffects();  // 调用weaponEffects.cs中的ReloadEffects()方法，换弹时产生特效
         }
         else if(canReload && isReload && currentMagazineAmmo > 0)
         {
             animator.Play("ReloadLeftAmmo");
+            weaponEffects.ReloadEffects();  // 调用weaponEffects.cs中的ReloadEffects()方法，换弹时产生特效
         }
     }
 
     // 方法：枪支初始化
-    private void GunInitialization()
+    private void WeaponInitialization()
     {
         // 获取当前枪支类型
         // 获取当前枪支的名字
-        string gunName = gameObject.name;
+        string WeaponName = gameObject.name;
         // 将字符串类型的枪支名称转换为对应的枚举类型值
         /* 解析：
          *  1.System.Enum.Parse - 这是一个静态方法，用于将字符串解析为枚举类型
          *  2.typeof(GunType) - 获取GunType枚举的类型信息
-         *  3.gunName - 字符串变量，包含枪支的名称（比如"Glock", "AK47"等）
+         *  3.WeaponName - 字符串变量，包含枪支的名称（比如"Glock", "AK47"等）
          *  4.(GunType) - 类型转换，将解析结果转换为GunType枚举类型
          *  5.currentGunType - 存储转换后的枚举值
          */
-        currentGunType = (GunType)System.Enum.Parse(typeof(GunType), gunName);
+        currentGunType = (GunType)System.Enum.Parse(typeof(GunType), WeaponName);
         // 根据上述获得的枚举类型值获取对应的枪支
         /* 解析：
          *  1.currentGunType - 这是一个枚举类型的变量，存储当前枪支的类型（比如GunType.Glock）
