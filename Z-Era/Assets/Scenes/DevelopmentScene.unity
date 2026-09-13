@@ -1971,11 +1971,15 @@ MonoBehaviour:
   - gunType: 0
     fireMode: 0
     magezineSize: 20
-    maxCarriedAmmo: 20
+    maxCarriedAmmo: 240
     singleFireRate: 0.1
     fullAutoFireRate: 0
     damage: 15
     range: 50
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 1
     fireMode: 0
     magezineSize: 7
@@ -1984,6 +1988,10 @@ MonoBehaviour:
     fullAutoFireRate: 0
     damage: 40
     range: 70
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 2
     fireMode: 0
     magezineSize: 18
@@ -1992,6 +2000,10 @@ MonoBehaviour:
     fullAutoFireRate: 0
     damage: 20
     range: 50
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 3
     fireMode: 1
     magezineSize: 30
@@ -2000,6 +2012,10 @@ MonoBehaviour:
     fullAutoFireRate: 0.2
     damage: 25
     range: 60
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 4
     fireMode: 1
     magezineSize: 30
@@ -2008,6 +2024,10 @@ MonoBehaviour:
     fullAutoFireRate: 0.15
     damage: 20
     range: 65
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 5
     fireMode: 0
     magezineSize: 7
@@ -2016,6 +2036,10 @@ MonoBehaviour:
     fullAutoFireRate: 0
     damage: 100
     range: 30
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 6
     fireMode: 1
     magezineSize: 20
@@ -2024,6 +2048,10 @@ MonoBehaviour:
     fullAutoFireRate: 0.05
     damage: 15
     range: 35
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 7
     fireMode: 1
     magezineSize: 25
@@ -2032,6 +2060,10 @@ MonoBehaviour:
     fullAutoFireRate: 0
     damage: 18
     range: 45
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 8
     fireMode: 1
     magezineSize: 50
@@ -2040,6 +2072,10 @@ MonoBehaviour:
     fullAutoFireRate: 0.1
     damage: 20
     range: 50
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 9
     fireMode: 1
     magezineSize: 30
@@ -2048,6 +2084,10 @@ MonoBehaviour:
     fullAutoFireRate: 0.15
     damage: 23
     range: 50
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
 --- !u!114 &718368091
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2062,6 +2102,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bulletSpeed: 100
   weaponCamera: {fileID: 1482657787}
+  bulletPool: {fileID: 814677510}
   weaponEffectConfigs:
   - gunType: 0
     shootSound: {fileID: 8300000, guid: d68da142598876641825e4e13afcbdd8, type: 3}
@@ -2072,7 +2113,8 @@ MonoBehaviour:
     bulletSpawnPoint: {fileID: 1294130202}
     muzzleFlash: {fileID: 474658963}
     bullet: {fileID: 1325836922669442, guid: 1b1fcf7eb1328cb47bcd33d9376e1f76, type: 3}
-    casingEjectionPoint: {fileID: 0}
+    casingEjectionPoint: {fileID: 777906746}
+    casing: {fileID: 1492315059354262, guid: 29c42ce8f2a60bd438cfd6497de5d2fd, type: 3}
   - gunType: 1
     shootSound: {fileID: 0}
     reloadSound_LeftAmmo: {fileID: 0}
@@ -2081,6 +2123,7 @@ MonoBehaviour:
     muzzleFlash: {fileID: 0}
     bullet: {fileID: 0}
     casingEjectionPoint: {fileID: 0}
+    casing: {fileID: 0}
   - gunType: 2
     shootSound: {fileID: 0}
     reloadSound_LeftAmmo: {fileID: 0}
@@ -2089,6 +2132,7 @@ MonoBehaviour:
     muzzleFlash: {fileID: 0}
     bullet: {fileID: 0}
     casingEjectionPoint: {fileID: 0}
+    casing: {fileID: 0}
   - gunType: 3
     shootSound: {fileID: 0}
     reloadSound_LeftAmmo: {fileID: 0}
@@ -2097,6 +2141,7 @@ MonoBehaviour:
     muzzleFlash: {fileID: 0}
     bullet: {fileID: 0}
     casingEjectionPoint: {fileID: 0}
+    casing: {fileID: 0}
   - gunType: 4
     shootSound: {fileID: 0}
     reloadSound_LeftAmmo: {fileID: 0}
@@ -2105,6 +2150,7 @@ MonoBehaviour:
     muzzleFlash: {fileID: 0}
     bullet: {fileID: 0}
     casingEjectionPoint: {fileID: 0}
+    casing: {fileID: 0}
   - gunType: 5
     shootSound: {fileID: 0}
     reloadSound_LeftAmmo: {fileID: 0}
@@ -2113,6 +2159,7 @@ MonoBehaviour:
     muzzleFlash: {fileID: 0}
     bullet: {fileID: 0}
     casingEjectionPoint: {fileID: 0}
+    casing: {fileID: 0}
   - gunType: 6
     shootSound: {fileID: 0}
     reloadSound_LeftAmmo: {fileID: 0}
@@ -2121,6 +2168,7 @@ MonoBehaviour:
     muzzleFlash: {fileID: 0}
     bullet: {fileID: 0}
     casingEjectionPoint: {fileID: 0}
+    casing: {fileID: 0}
   - gunType: 7
     shootSound: {fileID: 0}
     reloadSound_LeftAmmo: {fileID: 0}
@@ -2129,6 +2177,7 @@ MonoBehaviour:
     muzzleFlash: {fileID: 0}
     bullet: {fileID: 0}
     casingEjectionPoint: {fileID: 0}
+    casing: {fileID: 0}
   - gunType: 8
     shootSound: {fileID: 0}
     reloadSound_LeftAmmo: {fileID: 0}
@@ -2137,6 +2186,7 @@ MonoBehaviour:
     muzzleFlash: {fileID: 0}
     bullet: {fileID: 0}
     casingEjectionPoint: {fileID: 0}
+    casing: {fileID: 0}
   - gunType: 9
     shootSound: {fileID: 0}
     reloadSound_LeftAmmo: {fileID: 0}
@@ -2145,6 +2195,7 @@ MonoBehaviour:
     muzzleFlash: {fileID: 0}
     bullet: {fileID: 0}
     casingEjectionPoint: {fileID: 0}
+    casing: {fileID: 0}
 --- !u!82 &718368092
 AudioSource:
   m_ObjectHideFlags: 0
@@ -2241,6 +2292,37 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!1 &777906745
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 777906746}
+  m_Layer: 6
+  m_Name: CasingEjectionPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &777906746
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 777906745}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.1302, y: -1.0332, z: 0.7729}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1322106100}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &783058813
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2324,6 +2406,52 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6b163c88842ec2f40bc23ccd4c2c88a7, type: 3}
+--- !u!1 &814677509
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 814677511}
+  - component: {fileID: 814677510}
+  m_Layer: 0
+  m_Name: BulletPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &814677510
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 814677509}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01a56392391c90e4ebce1536a5df8eb5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  defaultCapacity: 30
+  maxSize: 300
+--- !u!4 &814677511
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 814677509}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.18754493, y: 1.4325542, z: 0.7172577}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -2639,6 +2767,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1029006909}
+  - component: {fileID: 1029006910}
   m_Layer: 0
   m_Name: WeaponHolder
   m_TagString: Untagged
@@ -2671,6 +2800,21 @@ Transform:
   - {fileID: 473620627}
   m_Father: {fileID: 1482657784}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1029006910
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1029006908}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8d3edf2d7e08b540b0ad303184ae4b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  weaponCamera: {fileID: 1482657784}
+  followSpeed: 15
+  maxLagAngle: 3
 --- !u!4 &1030298317 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400012, guid: 8bdb3f4eab1102e49a2d340827a72d6d,
@@ -2691,6 +2835,7 @@ GameObject:
   - component: {fileID: 1062446603}
   - component: {fileID: 1062446607}
   - component: {fileID: 1062446602}
+  - component: {fileID: 1062446608}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -2904,6 +3049,23 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1062446608
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1062446601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 019e4537520448f4986320348340cc56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mainCamera: {fileID: 330585546}
+  weaponCamera: {fileID: 1482657784}
+  kickAngle: 3
+  maxOffset: 10
+  returnTime: 0.1
 --- !u!1001 &1224504179
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3440,7 +3602,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1294130202}
   m_Layer: 6
-  m_Name: bulletSpawnPoint
+  m_Name: BulletSpawnPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3455,7 +3617,7 @@ Transform:
   m_GameObject: {fileID: 1294130201}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.1055, y: -1.0077, z: 0.5184}
+  m_LocalPosition: {x: 0.1025, y: -1.0089, z: 0.6025}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -4830,6 +4992,7 @@ GameObject:
   - component: {fileID: 718368092}
   - component: {fileID: 718368089}
   - component: {fileID: 718368091}
+  - component: {fileID: 1322106075}
   m_Layer: 6
   m_Name: Glock
   m_TagString: Untagged
@@ -5261,6 +5424,18 @@ Transform:
   - {fileID: 1322106076}
   m_Father: {fileID: 1029006909}
   m_LocalEulerAnglesHint: {x: 0, y: -10, z: 0}
+--- !u!114 &1322106075
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1321869562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e79f69e3181e0e54f93545e5802583ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &1322106076
 Transform:
   m_ObjectHideFlags: 0
@@ -5473,6 +5648,7 @@ Transform:
   m_Children:
   - {fileID: 1294130202}
   - {fileID: 474658961}
+  - {fileID: 777906746}
   - {fileID: 1545519956}
   - {fileID: 1322106072}
   - {fileID: 1322106098}
@@ -5766,6 +5942,10 @@ MonoBehaviour:
     fullAutoFireRate: 0
     damage: 15
     range: 50
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 1
     fireMode: 0
     magezineSize: 7
@@ -5774,6 +5954,10 @@ MonoBehaviour:
     fullAutoFireRate: 0
     damage: 40
     range: 70
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 2
     fireMode: 0
     magezineSize: 18
@@ -5782,6 +5966,10 @@ MonoBehaviour:
     fullAutoFireRate: 0
     damage: 20
     range: 50
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 3
     fireMode: 1
     magezineSize: 30
@@ -5790,6 +5978,10 @@ MonoBehaviour:
     fullAutoFireRate: 0.2
     damage: 25
     range: 60
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 4
     fireMode: 1
     magezineSize: 30
@@ -5798,6 +5990,10 @@ MonoBehaviour:
     fullAutoFireRate: 0.15
     damage: 20
     range: 65
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 5
     fireMode: 0
     magezineSize: 7
@@ -5806,6 +6002,10 @@ MonoBehaviour:
     fullAutoFireRate: 0
     damage: 100
     range: 30
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 6
     fireMode: 1
     magezineSize: 20
@@ -5814,6 +6014,10 @@ MonoBehaviour:
     fullAutoFireRate: 0.05
     damage: 15
     range: 35
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 7
     fireMode: 1
     magezineSize: 25
@@ -5822,6 +6026,10 @@ MonoBehaviour:
     fullAutoFireRate: 0
     damage: 18
     range: 45
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 8
     fireMode: 1
     magezineSize: 50
@@ -5830,6 +6038,10 @@ MonoBehaviour:
     fullAutoFireRate: 0.1
     damage: 20
     range: 50
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
   - gunType: 9
     fireMode: 1
     magezineSize: 30
@@ -5838,6 +6050,10 @@ MonoBehaviour:
     fullAutoFireRate: 0.15
     damage: 23
     range: 50
+    spreadPerShot: 0.2
+    maxSpread: 3
+    spreadRecovery: 4
+    spreadResetTime: 0.25
 --- !u!4 &1905109106 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400012, guid: a95d583089688544a862556eafd1ba53,
@@ -6122,3 +6338,4 @@ SceneRoots:
   - {fileID: 236841568}
   - {fileID: 133888632}
   - {fileID: 1062446606}
+  - {fileID: 814677511}

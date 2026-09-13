@@ -15,10 +15,12 @@ public class WeaponEffects : MonoBehaviour
     private Transform bulletSpawnPoint;
     [Tooltip("枪焰")]
     private ParticleSystem muzzleFlash;
-    [Tooltip("子弹类型")]
+    [Tooltip("子弹预制体")]
     private GameObject bullet;
     [Tooltip("弹壳抛出位置")]
     private Transform casingEjectionPoint;
+    [Tooltip("弹壳预制体")]
+    private GameObject casing;
     [Tooltip("子弹速度")]
     public float bulletSpeed = 100f;
     #endregion
@@ -35,8 +37,15 @@ public class WeaponEffects : MonoBehaviour
     public Camera weaponCamera;
     #endregion
 
-    #region 脚本
+    #region 引用
     private WeaponController weaponController;
+    private CameraRecoil cameraRecoil;
+    private WeaponSpread weaponSpread;
+    #endregion
+
+    #region 对象池
+    [SerializeField]
+    private BulletPool bulletPool;
     #endregion
 
     [System.Serializable]
@@ -58,6 +67,8 @@ public class WeaponEffects : MonoBehaviour
         public GameObject bullet;
         [Tooltip("弹壳抛出位置")]
         public Transform casingEjectionPoint;
+        [Tooltip("弹壳预制体")]
+        public GameObject casing;
     }
 
     // 定义10把武器的效果
@@ -114,6 +125,9 @@ public class WeaponEffects : MonoBehaviour
     void Start()
     {
         weaponController = GetComponent<WeaponController>();
+        cameraRecoil = GetComponentInParent<CameraRecoil>();
+        weaponController = GetComponent<WeaponController>();
+        weaponSpread = GetComponent<WeaponSpread>();
     }
 
     void Update()
@@ -135,6 +149,7 @@ public class WeaponEffects : MonoBehaviour
         reloadSound_OutOfAmmo = currentWeaponConfig.reloadSound_OutOfAmmo;
         bulletSpawnPoint = currentWeaponConfig.bulletSpawnPoint;
         casingEjectionPoint = currentWeaponConfig.casingEjectionPoint;
+        casing = currentWeaponConfig.casing;
         muzzleFlash = currentWeaponConfig.muzzleFlash;
         bullet = currentWeaponConfig.bullet;
     }
@@ -151,23 +166,66 @@ public class WeaponEffects : MonoBehaviour
         // FPS游戏中由于枪口位置和相机位置不一致，所以子弹不能直接朝相机的前方发射
         // 做法：先从相机中心发射一条射线找到准星瞄准点再让子弹从枪口朝那个点飞
         // 1.从相机中心发射射线，找到准星瞄准的世界坐标
-        Ray ray = weaponCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        float spreadAngle = weaponSpread != null ? weaponSpread.ConsumeSpread() : 0f;
+
+        Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+
+        float halfFovRad =
+            weaponCamera.fieldOfView * 0.5f * Mathf.Deg2Rad;
+
+        float focalLength =
+            (Screen.height * 0.5f) / Mathf.Tan(halfFovRad);
+
+        float spreadRadiusPixels =
+            Mathf.Tan(spreadAngle * Mathf.Deg2Rad) * focalLength;
+
+        Vector2 randomOffset =
+            Random.insideUnitCircle * spreadRadiusPixels;
+
+        Vector2 screenPoint = screenCenter + randomOffset;
+
+        Ray ray = weaponCamera.ScreenPointToRay(
+            new Vector3(screenPoint.x, screenPoint.y, 0f)
+        );
+
         Vector3 targetPoint;
-        if(Physics.Raycast(ray,out RaycastHit hit,100f))
+
+        if (Physics.Raycast(ray, out RaycastHit hit, 100f))
         {
-            targetPoint = hit.point;    // 射线命中物体，用命中点
+            targetPoint = hit.point;
         }
         else
         {
-            targetPoint = ray.GetPoint(100f);  // 没命中，用射线远端的点
+            targetPoint = ray.GetPoint(100f);
         }
         // 2.从枪口到瞄准点的方向
         Vector3 shootDirection = (targetPoint - bulletSpawnPoint.position).normalized;
-        // 3.实例化子弹并朝向目标方向
+        // 3.实例化子弹并朝向目标方向（修改过，原本使用Instantiate实例化，后引入对象池改为Get）
         Quaternion bulletRotation = Quaternion.LookRotation(shootDirection) * Quaternion.Euler(90f, 0f, 0f);    // 调整子弹为横向
-        GameObject bulletInstance = Instantiate(bullet, bulletSpawnPoint.position, bulletRotation);
+        BulletHandle bulletInstance = bulletPool.Get(bullet, bulletSpawnPoint.position, bulletRotation);
         // 4.赋予子弹速度
-        bulletInstance.GetComponent<Rigidbody>().velocity = shootDirection * bulletSpeed;
+        if (bulletInstance != null)
+        {
+            bulletInstance.Launch(shootDirection * bulletSpeed);
+        }
+        // 视角后坐力
+        cameraRecoil.PlayRecoil();
+        // 抛出弹壳
+        if (casing == null)
+        {
+            Debug.LogWarning($"{gameObject.name} 没有设置弹壳预制体。");
+            return;
+        }
+        if (casingEjectionPoint == null)
+        {
+            Debug.LogWarning($"{gameObject.name} 没有设置弹壳抛出位置。");
+            return;
+        }
+        Instantiate(
+            casing,
+            casingEjectionPoint.position,
+            casingEjectionPoint.rotation
+        );
     }
 
     // 方法：换弹特效

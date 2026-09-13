@@ -41,7 +41,6 @@ public class PlayerController : MonoBehaviour
         characterController = GetComponent<CharacterController>();
         cam = GetComponentInChildren<Camera>();
         weaponCam = transform.Find("WeaponCamera")?.GetComponent<Camera>();
-        weaponHolder = transform.Find("WeaponHolder");
         Cursor.lockState = CursorLockMode.Locked;
         audioSource = GetComponent<AudioSource>();
         audioSource.clip = walkSound;

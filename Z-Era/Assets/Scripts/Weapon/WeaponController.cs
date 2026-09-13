@@ -36,6 +36,14 @@ public class GunData
     public float fullAutoFireRate;  //持续射击间隔
     public int damage;  // 伤害
     public float range; // 射程
+    [Tooltip("每发增加的散布角度")]
+    public float spreadPerShot = 0.2f;
+    [Tooltip("最大散布角度")]
+    public float maxSpread = 3f;
+    [Tooltip("每秒恢复的散布角度")]
+    public float spreadRecovery = 4f;
+    [Tooltip("超过这个时间未射击，散布恢复为0")]
+    public float spreadResetTime = 0.25f;
 }
 
 public class WeaponController : MonoBehaviour
@@ -212,8 +220,9 @@ public class WeaponController : MonoBehaviour
     };
     #endregion
 
-    #region 脚本
+    #region 引用
     private WeaponEffects weaponEffects;
+    public GunData CurrentGunData => gunDatas[(int)currentGunType];
     #endregion
 
     private void Awake()
