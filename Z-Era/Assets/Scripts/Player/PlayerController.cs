@@ -1,39 +1,49 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    #region ×é¼ş
-    [Tooltip("Íæ¼Ò¸ÕÌå")]
+    #region ç»„ä»¶
+    [Tooltip("ç©å®¶åˆšä½“")]
     private CharacterController characterController;
-    [Tooltip("Íæ¼ÒÏà»ú")]
+    [Tooltip("ç©å®¶ç›¸æœº")]
     private Camera cam;
-    [Tooltip("ÎäÆ÷Ïà»ú")]
+    [Tooltip("æ­¦å™¨ç›¸æœº")]
     private Camera weaponCam;
-    [Tooltip("ÎäÆ÷¹ÒÔØµã")]
+    [Tooltip("æ­¦å™¨æŒ‚è½½ç‚¹")]
     private Transform weaponHolder;
-    [Tooltip("ÒôÔ´")]
+    [Tooltip("éŸ³æº")]
     private AudioSource audioSource;
     #endregion
 
-    #region ½ÇÉ«ÊôĞÔ
-    [Tooltip("ĞĞ×ßËÙ¶È")]
+    #region è§’è‰²å±æ€§
+    [Tooltip("è¡Œèµ°é€Ÿåº¦")]
     public float walkSpeed = 5.0f;
-    [Tooltip("ÖØÁ¦")]
+    [Tooltip("é‡åŠ›")]
     public float gravity = -9.81f;
     private float verticalVelocity = 0f;
-    [Tooltip("ĞĞ×ßÒôĞ§")]
+    [Tooltip("è¡Œèµ°éŸ³æ•ˆ")]
     public AudioClip walkSound;
     #endregion
 
-    #region Ïà»ú²ÎÊı
-    [Tooltip("Êó±êÁéÃô¶È")]
+    #region ç›¸æœºå‚æ•°
+    [Tooltip("é¼ æ ‡çµæ•åº¦")]
     public float mouseSensitivity = 2.0f;
-    [Tooltip("ÉÏÏÂ´¹Ö±·½ÏòµÄ×î´óĞı×ª½Ç¶È")]
+    [Tooltip("ä¸Šä¸‹å‚ç›´æ–¹å‘çš„æœ€å¤§æ—‹è½¬è§’åº¦")]
     public float maxLookAngle = 80.0f;
-    [Tooltip("¼ÇÂ¼µ±Ç°Ïà»úµÄ´¹Ö±Ğı×ª½Ç¶È")]
+    [Tooltip("è®°å½•å½“å‰ç›¸æœºçš„å‚ç›´æ—‹è½¬è§’åº¦")]
     private float rotationX = 0.0f;
+
+    [Header("æ…¢é€Ÿå•ç‚¹åååŠ›æ¢å¤")]
+    [SerializeField, Min(0.01f)]
+    [Tooltip("æ…¢é€Ÿå•ç‚¹åååŠ›æ¢å¤çš„å¹³æ»‘æ—¶é—´")]
+    private float temporaryRecoilReturnTime = 0.2f;
+
+    private float temporaryRecoilPitch;
+    private float temporaryRecoilYaw;
+    private float temporaryRecoilPitchVelocity;
+    private float temporaryRecoilYawVelocity;
     #endregion
 
     void Start()
@@ -52,26 +62,26 @@ public class PlayerController : MonoBehaviour
         PlayerMoveController();
     }
 
-    // ·½·¨£ºÍæ¼ÒÒÆ¶¯
+    // æ–¹æ³•ï¼šç©å®¶ç§»åŠ¨
     private void PlayerMoveController()
     {
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
         bool isMoving = (h != 0 || v != 0);
         Vector3 moveDirection = (transform.right * h + transform.forward * v).normalized;
-        // ´¦ÀíÖØÁ¦
+        // å¤„ç†é‡åŠ›
         if (characterController.isGrounded)
         {
-            verticalVelocity = -2f; // ±£³ÖÌùµØ
+            verticalVelocity = -2f; // ä¿æŒè´´åœ°
         }
         else
         {
             verticalVelocity += gravity * Time.deltaTime;
         }
-        // ×éºÏË®Æ½ºÍ´¹Ö±ÒÆ¶¯
+        // ç»„åˆæ°´å¹³å’Œå‚ç›´ç§»åŠ¨
         Vector3 move = moveDirection * walkSpeed + Vector3.up * verticalVelocity;
         characterController.Move(move * Time.deltaTime);
-        // ĞĞ×ßÒôĞ§
+        // è¡Œèµ°éŸ³æ•ˆ
         if (isMoving && characterController.isGrounded)
         {
             if (!audioSource.isPlaying)
@@ -88,19 +98,65 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // ·½·¨£ºÍæ¼ÒÏà»úÊÓ½Ç
+    // æ–¹æ³•ï¼šç©å®¶ç›¸æœºè§†è§’
     private void PlayerCameraController()
     {
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
-        // Ë®Æ½Ğı×ªPlayer
+
+        // é¼ æ ‡æ§åˆ¶åŸºç¡€è§†è§’
         transform.Rotate(Vector3.up * mouseX);
-        // ´¹Ö±Ğı×ªCamera
         rotationX -= mouseY;
         rotationX = Mathf.Clamp(rotationX, -maxLookAngle, maxLookAngle);
-        cam.transform.localRotation = Quaternion.Euler(rotationX, 0f, 0f);
-        // ÎäÆ÷Ïà»úÍêÈ«Í¬²½Ö÷Ïà»ú
+
+        // ä¸´æ—¶åååŠ›å¹³æ»‘æ¢å¤åˆ° 0
+        temporaryRecoilPitch = Mathf.SmoothDamp(
+            temporaryRecoilPitch,
+            0f,
+            ref temporaryRecoilPitchVelocity,
+            temporaryRecoilReturnTime
+        );
+
+        temporaryRecoilYaw = Mathf.SmoothDamp(
+            temporaryRecoilYaw,
+            0f,
+            ref temporaryRecoilYawVelocity,
+            temporaryRecoilReturnTime
+        );
+
+        // æœ€ç»ˆç›¸æœºè§’åº¦ = æ°¸ä¹…åååŠ›åçš„åŸºç¡€è§’åº¦ + ä¸´æ—¶åååŠ›
+        float finalPitch = Mathf.Clamp(
+            rotationX - temporaryRecoilPitch,
+            -maxLookAngle,
+            maxLookAngle
+        );
+
+        cam.transform.localRotation = Quaternion.Euler(
+            finalPitch,
+            temporaryRecoilYaw,
+            0f
+        );
+
+        // æ­¦å™¨ç›¸æœºå®Œå…¨åŒæ­¥ä¸»ç›¸æœº
         weaponCam.transform.position = cam.transform.position;
         weaponCam.transform.rotation = cam.transform.rotation;
+    }
+
+    // æ–¹æ³•ï¼šæ·»åŠ åååŠ›ï¼ˆç”± CameraRecoil è°ƒç”¨ï¼‰
+    public void AddRecoil(float pitchAmount, float yawAmount)
+    {
+        // å‘ä¸ŠæŠ¬ï¼šrotationX å˜å°ï¼Œè§†è§’æ°¸ä¹…æ”¹å˜
+        rotationX -= pitchAmount;
+        rotationX = Mathf.Clamp(rotationX, -maxLookAngle, maxLookAngle);
+
+        // æ°´å¹³æ–¹å‘ï¼šç›´æ¥è½¬åŠ¨ Playerï¼Œè§†è§’æ°¸ä¹…æ”¹å˜
+        transform.Rotate(Vector3.up * yawAmount);
+    }
+
+    // æ–¹æ³•ï¼šæ·»åŠ ä¼šæ¢å¤çš„ä¸´æ—¶åååŠ›ï¼ˆæ…¢é€Ÿå•ç‚¹ï¼‰
+    public void AddTemporaryRecoil(float pitchAmount, float yawAmount)
+    {
+        temporaryRecoilPitch += pitchAmount;
+        temporaryRecoilYaw += yawAmount;
     }
 }

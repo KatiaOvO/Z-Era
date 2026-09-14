@@ -1,32 +1,54 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class CameraRecoil : MonoBehaviour
 {
-    [Header("Camera References")]
+    [Header("References")]
+    [SerializeField]
+    private PlayerController playerController;
+
     [SerializeField]
     private Transform mainCamera;
 
     [SerializeField]
     private Transform weaponCamera;
 
-    [Header("Recoil Settings")]
+    [Header("Recoil Defaults")]
     [SerializeField, Min(0f)]
-    [Tooltip("Ã¿´ÎÉä»÷¾µÍ·Á¢¼´Ôö¼ÓµÄºáÏòÆ«ÒÆÁ¿")]
+    [Tooltip("æ­¦å™¨æœªå•ç‹¬é…ç½®æ—¶ï¼Œæ¯å‘å‘ä¸ŠæŠ¬å‡çš„è§’åº¦")]
+    private float kickPitch = 0.5f;
+
+    [SerializeField, Min(0f)]
+    [Tooltip("æ­¦å™¨æœªå•ç‹¬é…ç½®æ—¶ï¼Œæ¯å‘æ°´å¹³éšæœºåç§»çš„æœ€å¤§è§’åº¦")]
+    private float kickYaw = 0.12f;
+
+    [SerializeField, Min(0f)]
+    [Tooltip("æ­¦å™¨æœªå•ç‹¬é…ç½®æ—¶ï¼Œæ…¢é€Ÿå•ç‚¹çš„é—´éš”é˜ˆå€¼")]
+    private float slowShotInterval = 0.25f;
+
+    [Header("Visual Roll")]
+    [SerializeField, Min(0f)]
+    [Tooltip("æ¯å‘é•œå¤´å·¦å³ä¾§å€¾è§’åº¦")]
     private float kickAngle = 2f;
 
     [SerializeField, Min(0f)]
-    [Tooltip("¾µÍ·ºáÏòÆ«ÒÆµÄ¾ø¶ÔÉÏÏŞ")]
+    [Tooltip("é•œå¤´ä¾§å€¾çš„ç»å¯¹ä¸Šé™")]
     private float maxOffset = 5f;
 
     [SerializeField, Min(0.01f)]
-    [Tooltip("Æ½»¬»Ö¸´Ê±¼ä")]
+    [Tooltip("ä¾§å€¾æ¢å¤æ—¶é—´")]
     private float returnTime = 0.1f;
 
     private float currentOffset;
     private float offsetVelocity;
+    private float lastShotTime = -Mathf.Infinity;
 
     private void Awake()
     {
+        if (playerController == null)
+        {
+            playerController = GetComponent<PlayerController>();
+        }
+
         if (mainCamera == null)
         {
             mainCamera = transform.Find("MainCamera");
@@ -38,9 +60,57 @@ public class CameraRecoil : MonoBehaviour
         }
     }
 
-    public void PlayRecoil()
+    public void PlayRecoil(
+        float weaponKickPitch,
+        float weaponKickYaw,
+        float weaponSlowShotInterval)
     {
-        // 50% Ïò×ó£¬50% ÏòÓÒ
+        // æ­¦å™¨æ²¡æœ‰å•ç‹¬é…ç½®æ—¶ï¼ˆæ—§åœºæ™¯æ•°æ®ä¸º0ï¼‰ï¼Œä½¿ç”¨è¿™é‡Œçš„é»˜è®¤å€¼
+        if (weaponKickPitch <= 0f)
+        {
+            weaponKickPitch = kickPitch;
+        }
+
+        if (weaponKickYaw <= 0f)
+        {
+            weaponKickYaw = kickYaw;
+        }
+
+        if (weaponSlowShotInterval <= 0f)
+        {
+            weaponSlowShotInterval = slowShotInterval;
+        }
+
+        if (playerController != null)
+        {
+            float timeSinceLastShot = Time.time - lastShotTime;
+            lastShotTime = Time.time;
+
+            // æ°´å¹³å·¦å³å„ä¸€åŠèŒƒå›´éšæœº
+            float yawAmount = Random.Range(
+                -weaponKickYaw,
+                weaponKickYaw
+            );
+
+            if (timeSinceLastShot >= weaponSlowShotInterval)
+            {
+                // æ…¢é€Ÿå•ç‚¹ï¼šä¸´æ—¶åååŠ›ï¼Œä¼šè‡ªåŠ¨æ¢å¤
+                playerController.AddTemporaryRecoil(
+                    weaponKickPitch,
+                    yawAmount
+                );
+            }
+            else
+            {
+                // å¿«é€Ÿå•ç‚¹æˆ–å…¨è‡ªåŠ¨ï¼šæ°¸ä¹…åååŠ›ï¼Œä¿æŒç°æœ‰ç´¯ç§¯æ•ˆæœ
+                playerController.AddRecoil(
+                    weaponKickPitch,
+                    yawAmount
+                );
+            }
+        }
+
+        // é•œå¤´å·¦å³ä¾§å€¾çš„è§†è§‰æ™ƒåŠ¨
         float direction = Random.value < 0.5f ? -1f : 1f;
 
         currentOffset += direction * kickAngle;
@@ -53,7 +123,7 @@ public class CameraRecoil : MonoBehaviour
 
     private void LateUpdate()
     {
-        // Æ½»¬»Ö¸´Ô­Î»
+        // ä¾§å€¾å¹³æ»‘æ¢å¤åŸä½
         currentOffset = Mathf.SmoothDamp(
             currentOffset,
             0f,
@@ -61,18 +131,21 @@ public class CameraRecoil : MonoBehaviour
             returnTime
         );
 
-        // ÕâÀïÈÆ Z ÖáĞı×ª£¬±íÏÖÎª¾µÍ·×óÓÒ²àÇã
+        if (mainCamera == null || weaponCamera == null)
+        {
+            return;
+        }
+
+        // åœ¨ç›¸æœºæœ€ç»ˆä¿¯ä»°è§’çš„åŸºç¡€ä¸Šå åŠ å·¦å³ä¾§å€¾
         Quaternion recoilRotation =
             Quaternion.Euler(0f, 0f, currentOffset);
 
-        // PlayerController Ã¿Ö¡»áÏÈÉèÖÃ»ù´¡¸©Ñö½Ç
-        // ÔÙÔÚ»ù´¡Ğı×ªÉÏµş¼Óºó×øÁ¦Æ«ÒÆ
         Quaternion baseRotation = mainCamera.localRotation;
 
         mainCamera.localRotation =
             baseRotation * recoilRotation;
 
-        // Á½¸öÏà»ú±£³ÖÍ¬²½£¬±ÜÃâÎäÆ÷ÊÓ½ÇºÍÖ÷ÊÓ½Ç´íÎ»
+        // ä¸¤ä¸ªç›¸æœºä¿æŒåŒæ­¥ï¼Œé¿å…æ­¦å™¨è§†è§’å’Œä¸»è§†è§’é”™ä½
         weaponCamera.rotation = mainCamera.rotation;
     }
 }

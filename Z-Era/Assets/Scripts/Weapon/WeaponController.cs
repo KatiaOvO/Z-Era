@@ -1,8 +1,8 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Ç¹Ö§ÀàĞÍÃ¶¾Ù
+// æªæ”¯ç±»å‹æšä¸¾
 public enum GunType
 {
     Glock,
@@ -17,88 +17,96 @@ public enum GunType
     MP5
 }
 
-// ¿ª»ğÀàĞÍÃ¶¾Ù
+// å¼€ç«ç±»å‹æšä¸¾
 public enum FireMode
 {
-    SemiAuto,   // °ë×Ô¶¯
-    FullAuto    // È«×Ô¶¯
+    SemiAuto,   // åŠè‡ªåŠ¨
+    FullAuto    // å…¨è‡ªåŠ¨
 }
 
 [System.Serializable]
-// Ç¹Ö§Êı¾İÀà
+// æªæ”¯æ•°æ®ç±»
 public class GunData
 {
     public GunType gunType;
     public FireMode fireMode;
-    public int magezineSize;    // µ¯Ï»ÈİÁ¿
-    public int maxCarriedAmmo;  // ×î´óĞ¯µ¯Êı
-    public float singleFireRate;    // µ¥µãÉä»÷¼ä¸ô
-    public float fullAutoFireRate;  //³ÖĞøÉä»÷¼ä¸ô
-    public int damage;  // ÉËº¦
-    public float range; // Éä³Ì
-    [Tooltip("Ã¿·¢Ôö¼ÓµÄÉ¢²¼½Ç¶È")]
+    public int magezineSize;    // å¼¹åŒ£å®¹é‡
+    public int maxCarriedAmmo;  // æœ€å¤§æºå¼¹æ•°
+    public float singleFireRate;    // å•ç‚¹å°„å‡»é—´éš”
+    public float fullAutoFireRate;  //æŒç»­å°„å‡»é—´éš”
+    public int damage;  // ä¼¤å®³
+    public float range; // å°„ç¨‹
+    [Tooltip("æ¯å‘å¢åŠ çš„æ•£å¸ƒè§’åº¦")]
     public float spreadPerShot = 0.2f;
-    [Tooltip("×î´óÉ¢²¼½Ç¶È")]
+    [Tooltip("æœ€å¤§æ•£å¸ƒè§’åº¦")]
     public float maxSpread = 3f;
-    [Tooltip("Ã¿Ãë»Ö¸´µÄÉ¢²¼½Ç¶È")]
+    [Tooltip("æ¯ç§’æ¢å¤çš„æ•£å¸ƒè§’åº¦")]
     public float spreadRecovery = 4f;
-    [Tooltip("³¬¹ıÕâ¸öÊ±¼äÎ´Éä»÷£¬É¢²¼»Ö¸´Îª0")]
+    [Tooltip("è¶…è¿‡è¿™ä¸ªæ—¶é—´æœªå°„å‡»ï¼Œæ•£å¸ƒæ¢å¤ä¸º0")]
     public float spreadResetTime = 0.25f;
+
+    [Header("åååŠ›")]
+    [Tooltip("æ¯å‘å‘ä¸ŠæŠ¬å‡çš„è§’åº¦")]
+    public float recoilPitch = 0.5f;
+    [Tooltip("æ¯å‘æ°´å¹³éšæœºåç§»çš„æœ€å¤§è§’åº¦")]
+    public float recoilYaw = 0.12f;
+    [Tooltip("ä¸¤å‘é—´éš”è¶…è¿‡è¿™ä¸ªæ—¶é—´è§†ä¸ºæ…¢é€Ÿå•ç‚¹ï¼ŒåååŠ›ä¼šè‡ªåŠ¨æ¢å¤")]
+    public float slowShotInterval = 0.25f;
 }
 
 public class WeaponController : MonoBehaviour
 {
-    #region ×é¼ş
-    [Tooltip("ÎäÆ÷¶¯»­Æ÷")]
+    #region ç»„ä»¶
+    [Tooltip("æ­¦å™¨åŠ¨ç”»å™¨")]
     private Animator animator;
     #endregion
 
-    #region ÅĞ¶Ï²ÎÊı
-    [Tooltip("ĞĞ×ßÅĞ¶Ï²ÎÊı")]
+    #region åˆ¤æ–­å‚æ•°
+    [Tooltip("è¡Œèµ°åˆ¤æ–­å‚æ•°")]
     private bool isWalk;
-    [Tooltip("µ¥µã¿ª»ğÅĞ¶Ï²ÎÊı")]
+    [Tooltip("å•ç‚¹å¼€ç«åˆ¤æ–­å‚æ•°")]
     private bool isSingleFire;
-    [Tooltip("×Ô¶¯¿ª»ğÅĞ¶Ï²ÎÊı")]
+    [Tooltip("è‡ªåŠ¨å¼€ç«åˆ¤æ–­å‚æ•°")]
     private bool isAutoFire;
-    [Tooltip("µ¥µã¿ª»ğÏŞÖÆ²ÎÊı")]
+    [Tooltip("å•ç‚¹å¼€ç«é™åˆ¶å‚æ•°")]
     private bool singleFireTrigger;
-    [Tooltip("×Ô¶¯¿ª»ğÏŞÖÆ²ÎÊı")]
+    [Tooltip("è‡ªåŠ¨å¼€ç«é™åˆ¶å‚æ•°")]
     private bool autoFireTrigger;
-    [Tooltip("¼ìÊÓÅĞ¶Ï²ÎÊı")]
+    [Tooltip("æ£€è§†åˆ¤æ–­å‚æ•°")]
     private bool isInspect;
-    [Tooltip("Ø°Ê×¹¥»÷ÅĞ¶Ï²ÎÊı")]
+    [Tooltip("åŒ•é¦–æ”»å‡»åˆ¤æ–­å‚æ•°")]
     private bool isKnifeAttack;
-    [Tooltip("ÊÇ·ñÄÜ¿ª»ğÅĞ¶Ï²ÎÊı")]
+    [Tooltip("æ˜¯å¦èƒ½å¼€ç«åˆ¤æ–­å‚æ•°")]
     private bool canFire;
-    [Tooltip("ÊÇ·ñÄÜ»»µ¯ÅĞ¶Ï²ÎÊı")]
+    [Tooltip("æ˜¯å¦èƒ½æ¢å¼¹åˆ¤æ–­å‚æ•°")]
     private bool canReload;
-    [Tooltip("»»µ¯ÅĞ¶Ï²ÎÊı")]
+    [Tooltip("æ¢å¼¹åˆ¤æ–­å‚æ•°")]
     private bool isReload;
-    [Tooltip("µ¯Ï»ÊÇ·ñÍêÈ«´ò¿ÕÅĞ¶Ï²ÎÊı")]
+    [Tooltip("å¼¹åŒ£æ˜¯å¦å®Œå…¨æ‰“ç©ºåˆ¤æ–­å‚æ•°")]
     private bool isMagazineEmpty;
     #endregion
 
-    #region Éä»÷
-    [Tooltip("×î´óĞ¯µ¯Êı")]
+    #region å°„å‡»
+    [Tooltip("æœ€å¤§æºå¼¹æ•°")]
     private int maxCarriedAmmo;
-    [Tooltip("µ±Ç°Ğ¯µ¯Êı")]
+    [Tooltip("å½“å‰æºå¼¹æ•°")]
     private int currentCarriedAmmo;
-    [Tooltip("Ç¹µ¯Ï»ÈİÁ¿")]
+    [Tooltip("æªå¼¹åŒ£å®¹é‡")]
     private int magazineSize;
-    [Tooltip("µ±Ç°µ¯Ï»×Óµ¯Êı")]
+    [Tooltip("å½“å‰å¼¹åŒ£å­å¼¹æ•°")]
     public int currentMagazineAmmo;
-    [Tooltip("µ±Ç°Ç¹Ö§ÀàĞÍ")]
+    [Tooltip("å½“å‰æªæ”¯ç±»å‹")]
     private GunType currentGunType;
-    [Tooltip("µ±Ç°Éä»÷Ä£Ê½")]
+    [Tooltip("å½“å‰å°„å‡»æ¨¡å¼")]
     private FireMode currentFireMode;
-    [Tooltip("Éä»÷¼ÆÊ±Æ÷")]
+    [Tooltip("å°„å‡»è®¡æ—¶å™¨")]
     private float lastFireTime;
     #endregion
 
-    #region ¶¨Òå10°ÑÇ¹µÄÊôĞÔÊı×é
+    #region å®šä¹‰10æŠŠæªçš„å±æ€§æ•°ç»„
     public GunData[] gunDatas = new GunData[10]
     {
-        // Glock 20·¢£¬°ë×Ô¶¯
+        // Glock 20å‘ï¼ŒåŠè‡ªåŠ¨
         new GunData
         {
             gunType = GunType.Glock,
@@ -110,7 +118,7 @@ public class WeaponController : MonoBehaviour
             damage = 15,
             range = 50f
         },
-        // Desert Eagle 7·¢£¬°ë×Ô¶¯
+        // Desert Eagle 7å‘ï¼ŒåŠè‡ªåŠ¨
         new GunData
         {
             gunType = GunType.DesertEagle,
@@ -122,7 +130,7 @@ public class WeaponController : MonoBehaviour
             damage = 40,
             range = 70f
         },
-        // Tec9 18·¢£¬°ë×Ô¶¯
+        // Tec9 18å‘ï¼ŒåŠè‡ªåŠ¨
         new GunData
         {
             gunType = GunType.Tec9,
@@ -134,7 +142,7 @@ public class WeaponController : MonoBehaviour
             damage = 20,
             range = 50f
         },
-        // AK47 30·¢£¬È«×Ô¶¯
+        // AK47 30å‘ï¼Œå…¨è‡ªåŠ¨
         new GunData
         {
             gunType = GunType.AK47,
@@ -146,7 +154,7 @@ public class WeaponController : MonoBehaviour
             damage = 25,
             range = 60f
         },
-        // M4A4 30·¢£¬È«×Ô¶¯
+        // M4A4 30å‘ï¼Œå…¨è‡ªåŠ¨
         new GunData
         {
             gunType = GunType.M4A4,
@@ -158,7 +166,7 @@ public class WeaponController : MonoBehaviour
             damage = 20,
             range = 65f
         },
-        // XM1014 7·¢£¬°ë×Ô¶¯
+        // XM1014 7å‘ï¼ŒåŠè‡ªåŠ¨
         new GunData
         {
             gunType = GunType.XM1014,
@@ -170,7 +178,7 @@ public class WeaponController : MonoBehaviour
             damage = 100,
             range = 30f
         },
-        // Vector 20·¢£¬È«×Ô¶¯
+        // Vector 20å‘ï¼Œå…¨è‡ªåŠ¨
         new GunData
         {
             gunType = GunType.Vector,
@@ -182,7 +190,7 @@ public class WeaponController : MonoBehaviour
             damage = 15,
             range = 35f
         },
-        // Uzi 25·¢£¬È«×Ô¶¯
+        // Uzi 25å‘ï¼Œå…¨è‡ªåŠ¨
         new GunData
         {
             gunType = GunType.Uzi,
@@ -193,7 +201,7 @@ public class WeaponController : MonoBehaviour
             damage = 18,
             range = 45f
         },
-        // P90 50·¢£¬È«×Ô¶¯
+        // P90 50å‘ï¼Œå…¨è‡ªåŠ¨
         new GunData
         {
             gunType = GunType.P90,
@@ -205,7 +213,7 @@ public class WeaponController : MonoBehaviour
             damage = 20,
             range = 50f
         },
-        // MP5 30·¢£¬È«×Ô¶¯
+        // MP5 30å‘ï¼Œå…¨è‡ªåŠ¨
         new GunData
         {
             gunType = GunType.MP5,
@@ -220,14 +228,14 @@ public class WeaponController : MonoBehaviour
     };
     #endregion
 
-    #region ÒıÓÃ
+    #region å¼•ç”¨
     private WeaponEffects weaponEffects;
     public GunData CurrentGunData => gunDatas[(int)currentGunType];
     #endregion
 
     private void Awake()
     {
-        WeaponInitialization();    // ±ÜÃâÃ¿´ÎÇĞÇ¹¶¼³õÊ¼»¯½«µ±Ç°ÎäÆ÷³äÂú×Óµ¯£¬¹ÊÔÚAwake()ÖĞµ÷ÓÃ
+        WeaponInitialization();    // é¿å…æ¯æ¬¡åˆ‡æªéƒ½åˆå§‹åŒ–å°†å½“å‰æ­¦å™¨å……æ»¡å­å¼¹ï¼Œæ•…åœ¨Awake()ä¸­è°ƒç”¨
     }
 
     void Start()
@@ -246,35 +254,35 @@ public class WeaponController : MonoBehaviour
         Debug.Log(currentMagazineAmmo + "/" + currentCarriedAmmo);
     }
 
-    // ·½·¨£º²ÎÊıÅĞ¶Ï
+    // æ–¹æ³•ï¼šå‚æ•°åˆ¤æ–­
     private void ParameterJudgment()
     {
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
-        // ÅĞ¶ÏisWalking£º°´ÏÂÒÆ¶¯¼üÔòÎªÕıÔÚĞĞ×ß
+        // åˆ¤æ–­isWalkingï¼šæŒ‰ä¸‹ç§»åŠ¨é”®åˆ™ä¸ºæ­£åœ¨è¡Œèµ°
         isWalk = h != 0 || v != 0;
-        // ÅĞ¶ÏisSingleFire£º°´ÏÂÊó±ê×ó¼üÔòÎªµ¥µã¿ª»ğ
+        // åˆ¤æ–­isSingleFireï¼šæŒ‰ä¸‹é¼ æ ‡å·¦é”®åˆ™ä¸ºå•ç‚¹å¼€ç«
         isSingleFire = Input.GetKeyDown(KeyCode.Mouse0);
-        // ÅĞ¶ÏisAutoFire£º³ÖĞø°´ÏÂÊó±ê×ó¼üÔòÎª×Ô¶¯¿ª»ğ
+        // åˆ¤æ–­isAutoFireï¼šæŒç»­æŒ‰ä¸‹é¼ æ ‡å·¦é”®åˆ™ä¸ºè‡ªåŠ¨å¼€ç«
         isAutoFire= Input.GetKey(KeyCode.Mouse0);
-        // ÅĞ¶ÏisReload£º°´ÏÂR¼üÔòÎª»»µ¯
+        // åˆ¤æ–­isReloadï¼šæŒ‰ä¸‹Ré”®åˆ™ä¸ºæ¢å¼¹
         isReload = Input.GetKeyDown(KeyCode.R);
-        // ÅĞ¶ÏisInspecting£º°´ÏÂV¼üÔòÎª¼ìÊÓÎäÆ÷
+        // åˆ¤æ–­isInspectingï¼šæŒ‰ä¸‹Vé”®åˆ™ä¸ºæ£€è§†æ­¦å™¨
         isInspect = Input.GetKeyDown(KeyCode.V);
-        // ÅĞ¶ÏisKnifeAttack£º°´ÏÂF¼üÔòÎªØ°Ê×¹¥»÷
+        // åˆ¤æ–­isKnifeAttackï¼šæŒ‰ä¸‹Fé”®åˆ™ä¸ºåŒ•é¦–æ”»å‡»
         isKnifeAttack = Input.GetKeyDown(KeyCode.F);
     }
 
-    // ·½·¨£ºÎäÆ÷¶¯»­¿ØÖÆÆ÷
+    // æ–¹æ³•ï¼šæ­¦å™¨åŠ¨ç”»æ§åˆ¶å™¨
     private void AnimatorController()
     {
-        // »ñÈ¡µ±Ç°ÎäÆ÷ÔÚÃ¶¾ÙÖĞµÄË÷Òı
+        // è·å–å½“å‰æ­¦å™¨åœ¨æšä¸¾ä¸­çš„ç´¢å¼•
         int currentWeaponIndex = (int)currentGunType;
-        // »ñÈ¡ÎäÆ÷×ÜÊıÈ·¶¨Ñ­»·ÂÖÊı
+        // è·å–æ­¦å™¨æ€»æ•°ç¡®å®šå¾ªç¯è½®æ•°
         int weaponNum = gunDatas.Length;
-        // Ñ­»·£º½«¶¯»­Æ÷ÖĞµÄ¶ÔÓ¦µÄÎäÆ÷Í¼²ãµÄÈ¨ÖØÉèÖÃÎª1
-        // ±éÀúÎäÆ÷Ë÷ÒıµÈÓÚµ±Ç°ÎäÆ÷Ë÷ÒıÊ±£¬µ±Ç°µÄ±éÀúË÷Òı+1µÄ¶¯»­Æ÷Í¼²ãÈ¨ÖØÉèÖÃÎª1£¬ÆäÓàÉèÖÃÎª0
-        // ÓÉÓÚĞèÒª±£ÁôBase Layer£¬¹ÊBase LayerµÄÍ¼²ãË÷ÒıÎª0£¬ÆäÓàÎäÆ÷Í¼²ãµÄË÷ÒıĞè+1
+        // å¾ªç¯ï¼šå°†åŠ¨ç”»å™¨ä¸­çš„å¯¹åº”çš„æ­¦å™¨å›¾å±‚çš„æƒé‡è®¾ç½®ä¸º1
+        // éå†æ­¦å™¨ç´¢å¼•ç­‰äºå½“å‰æ­¦å™¨ç´¢å¼•æ—¶ï¼Œå½“å‰çš„éå†ç´¢å¼•+1çš„åŠ¨ç”»å™¨å›¾å±‚æƒé‡è®¾ç½®ä¸º1ï¼Œå…¶ä½™è®¾ç½®ä¸º0
+        // ç”±äºéœ€è¦ä¿ç•™Base Layerï¼Œæ•…Base Layerçš„å›¾å±‚ç´¢å¼•ä¸º0ï¼Œå…¶ä½™æ­¦å™¨å›¾å±‚çš„ç´¢å¼•éœ€+1
         for(int traverseWeaponIdex = 0; traverseWeaponIdex < weaponNum; traverseWeaponIdex ++)
         {
             if(traverseWeaponIdex == currentWeaponIndex)
@@ -286,7 +294,7 @@ public class WeaponController : MonoBehaviour
                 animator.SetLayerWeight(traverseWeaponIdex + 1, 0);
             }
         }
-        // ²¥·ÅÖ¸¶¨¶¯»­Ê±£¬Ö»ÓĞ²¥·ÅÍêµ±Ç°¶¯»­Ö®ºó²ÅÄÜ²¥·ÅÆäËû¶¯»­£¬°üÀ¨£ºØ°Ê×¹¥»÷¡¢Á½ÖÖ»»µ¯
+        // æ’­æ”¾æŒ‡å®šåŠ¨ç”»æ—¶ï¼Œåªæœ‰æ’­æ”¾å®Œå½“å‰åŠ¨ç”»ä¹‹åæ‰èƒ½æ’­æ”¾å…¶ä»–åŠ¨ç”»ï¼ŒåŒ…æ‹¬ï¼šåŒ•é¦–æ”»å‡»ã€ä¸¤ç§æ¢å¼¹
         AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(currentWeaponIndex + 1);
         if (state.IsName("KnifeAttack") || state.IsName("ReloadOutOfAmmo") || state.IsName("ReloadLeftAmmo"))
         {
@@ -300,119 +308,119 @@ public class WeaponController : MonoBehaviour
         if(singleFireTrigger)
         {
             animator.Play("Fire");
-            weaponEffects.ShootEffects();   // µ÷ÓÃweaponEffects.csÖĞµÄShootEffects()·½·¨£¬Éä»÷Ê±²úÉúÌØĞ§
-            currentMagazineAmmo--;  // µ±Ç°µ¯Ï»×Óµ¯Êı-1
+            weaponEffects.ShootEffects();   // è°ƒç”¨weaponEffects.csä¸­çš„ShootEffects()æ–¹æ³•ï¼Œå°„å‡»æ—¶äº§ç”Ÿç‰¹æ•ˆ
+            currentMagazineAmmo--;  // å½“å‰å¼¹åŒ£å­å¼¹æ•°-1
             singleFireTrigger = false;
         }
         else if(autoFireTrigger)
         {
             animator.Play("Fire");
-            weaponEffects.ShootEffects();   // µ÷ÓÃweaponEffects.csÖĞµÄShootEffects()·½·¨£¬Éä»÷Ê±²úÉúÌØĞ§
-            currentMagazineAmmo--;  // µ±Ç°µ¯Ï»×Óµ¯Êı-1
+            weaponEffects.ShootEffects();   // è°ƒç”¨weaponEffects.csä¸­çš„ShootEffects()æ–¹æ³•ï¼Œå°„å‡»æ—¶äº§ç”Ÿç‰¹æ•ˆ
+            currentMagazineAmmo--;  // å½“å‰å¼¹åŒ£å­å¼¹æ•°-1
             autoFireTrigger = false;
         }
         if(canReload && isReload && currentMagazineAmmo == 0)
         {
             animator.Play("ReloadOutOfAmmo");   
-            weaponEffects.ReloadEffects();  // µ÷ÓÃweaponEffects.csÖĞµÄReloadEffects()·½·¨£¬»»µ¯Ê±²úÉúÌØĞ§
+            weaponEffects.ReloadEffects();  // è°ƒç”¨weaponEffects.csä¸­çš„ReloadEffects()æ–¹æ³•ï¼Œæ¢å¼¹æ—¶äº§ç”Ÿç‰¹æ•ˆ
         }
         else if(canReload && isReload && currentMagazineAmmo > 0)
         {
             animator.Play("ReloadLeftAmmo");
-            weaponEffects.ReloadEffects();  // µ÷ÓÃweaponEffects.csÖĞµÄReloadEffects()·½·¨£¬»»µ¯Ê±²úÉúÌØĞ§
+            weaponEffects.ReloadEffects();  // è°ƒç”¨weaponEffects.csä¸­çš„ReloadEffects()æ–¹æ³•ï¼Œæ¢å¼¹æ—¶äº§ç”Ÿç‰¹æ•ˆ
         }
     }
 
-    // ·½·¨£ºÇ¹Ö§³õÊ¼»¯
+    // æ–¹æ³•ï¼šæªæ”¯åˆå§‹åŒ–
     private void WeaponInitialization()
     {
-        // »ñÈ¡µ±Ç°Ç¹Ö§ÀàĞÍ
-        // »ñÈ¡µ±Ç°Ç¹Ö§µÄÃû×Ö
+        // è·å–å½“å‰æªæ”¯ç±»å‹
+        // è·å–å½“å‰æªæ”¯çš„åå­—
         string WeaponName = gameObject.name;
-        // ½«×Ö·û´®ÀàĞÍµÄÇ¹Ö§Ãû³Æ×ª»»Îª¶ÔÓ¦µÄÃ¶¾ÙÀàĞÍÖµ
-        /* ½âÎö£º
-         *  1.System.Enum.Parse - ÕâÊÇÒ»¸ö¾²Ì¬·½·¨£¬ÓÃÓÚ½«×Ö·û´®½âÎöÎªÃ¶¾ÙÀàĞÍ
-         *  2.typeof(GunType) - »ñÈ¡GunTypeÃ¶¾ÙµÄÀàĞÍĞÅÏ¢
-         *  3.WeaponName - ×Ö·û´®±äÁ¿£¬°üº¬Ç¹Ö§µÄÃû³Æ£¨±ÈÈç"Glock", "AK47"µÈ£©
-         *  4.(GunType) - ÀàĞÍ×ª»»£¬½«½âÎö½á¹û×ª»»ÎªGunTypeÃ¶¾ÙÀàĞÍ
-         *  5.currentGunType - ´æ´¢×ª»»ºóµÄÃ¶¾ÙÖµ
+        // å°†å­—ç¬¦ä¸²ç±»å‹çš„æªæ”¯åç§°è½¬æ¢ä¸ºå¯¹åº”çš„æšä¸¾ç±»å‹å€¼
+        /* è§£æï¼š
+         *  1.System.Enum.Parse - è¿™æ˜¯ä¸€ä¸ªé™æ€æ–¹æ³•ï¼Œç”¨äºå°†å­—ç¬¦ä¸²è§£æä¸ºæšä¸¾ç±»å‹
+         *  2.typeof(GunType) - è·å–GunTypeæšä¸¾çš„ç±»å‹ä¿¡æ¯
+         *  3.WeaponName - å­—ç¬¦ä¸²å˜é‡ï¼ŒåŒ…å«æªæ”¯çš„åç§°ï¼ˆæ¯”å¦‚"Glock", "AK47"ç­‰ï¼‰
+         *  4.(GunType) - ç±»å‹è½¬æ¢ï¼Œå°†è§£æç»“æœè½¬æ¢ä¸ºGunTypeæšä¸¾ç±»å‹
+         *  5.currentGunType - å­˜å‚¨è½¬æ¢åçš„æšä¸¾å€¼
          */
         currentGunType = (GunType)System.Enum.Parse(typeof(GunType), WeaponName);
-        // ¸ù¾İÉÏÊö»ñµÃµÄÃ¶¾ÙÀàĞÍÖµ»ñÈ¡¶ÔÓ¦µÄÇ¹Ö§
-        /* ½âÎö£º
-         *  1.currentGunType - ÕâÊÇÒ»¸öÃ¶¾ÙÀàĞÍµÄ±äÁ¿£¬´æ´¢µ±Ç°Ç¹Ö§µÄÀàĞÍ£¨±ÈÈçGunType.Glock£©
-         *  2.(int)currentGunType - ½«Ã¶¾ÙÖµ×ª»»ÎªÕûÊıË÷Òı£¬Ã¶¾ÙÖµÔÚC#ÖĞ±¾ÖÊÉÏÊÇÕûÊı£¬GunType.Glock ¶ÔÓ¦Ë÷Òı 0
-         *  3.gunDatas[(int)currentGunType] - ´ÓgunDatasÊı×éÖĞ»ñÈ¡¶ÔÓ¦Ë÷ÒıµÄÔªËØ
-         *  4.GunData currentGunData - ÉùÃ÷Ò»¸öGunDataÀàĞÍµÄ±äÁ¿£¬²¢¸³ÖµÎª»ñÈ¡µ½µÄÊı¾İ
-         *  ×ÛÉÏ£¬ÎäÆ÷ÀàĞÍÃ¶¾ÙÖĞµÄË÷ÒıÒ»¶¨ÒªºÍÎäÆ÷Êı×éÖĞµÄË÷ÒıÒ»Ò»¶ÔÓ¦
+        // æ ¹æ®ä¸Šè¿°è·å¾—çš„æšä¸¾ç±»å‹å€¼è·å–å¯¹åº”çš„æªæ”¯
+        /* è§£æï¼š
+         *  1.currentGunType - è¿™æ˜¯ä¸€ä¸ªæšä¸¾ç±»å‹çš„å˜é‡ï¼Œå­˜å‚¨å½“å‰æªæ”¯çš„ç±»å‹ï¼ˆæ¯”å¦‚GunType.Glockï¼‰
+         *  2.(int)currentGunType - å°†æšä¸¾å€¼è½¬æ¢ä¸ºæ•´æ•°ç´¢å¼•ï¼Œæšä¸¾å€¼åœ¨C#ä¸­æœ¬è´¨ä¸Šæ˜¯æ•´æ•°ï¼ŒGunType.Glock å¯¹åº”ç´¢å¼• 0
+         *  3.gunDatas[(int)currentGunType] - ä»gunDatasæ•°ç»„ä¸­è·å–å¯¹åº”ç´¢å¼•çš„å…ƒç´ 
+         *  4.GunData currentGunData - å£°æ˜ä¸€ä¸ªGunDataç±»å‹çš„å˜é‡ï¼Œå¹¶èµ‹å€¼ä¸ºè·å–åˆ°çš„æ•°æ®
+         *  ç»¼ä¸Šï¼Œæ­¦å™¨ç±»å‹æšä¸¾ä¸­çš„ç´¢å¼•ä¸€å®šè¦å’Œæ­¦å™¨æ•°ç»„ä¸­çš„ç´¢å¼•ä¸€ä¸€å¯¹åº”
          */
         GunData currentGunData = gunDatas[(int)currentGunType];
-        // ³õÊ¼»¯Ç¹Ö§Êı¾İ
+        // åˆå§‹åŒ–æªæ”¯æ•°æ®
         maxCarriedAmmo = currentGunData.maxCarriedAmmo;
         currentCarriedAmmo = maxCarriedAmmo;
         magazineSize = currentGunData.magezineSize;
-        currentMagazineAmmo = magazineSize; // ³õÊ¼Âúµ¯Ï»
+        currentMagazineAmmo = magazineSize; // åˆå§‹æ»¡å¼¹åŒ£
         currentFireMode = currentGunData.fireMode;
         lastFireTime = 0.0f;
     }
 
-    // ·½·¨£ºÉä»÷×´Ì¬ÊµÏÖ
+    // æ–¹æ³•ï¼šå°„å‡»çŠ¶æ€å®ç°
     private void ShootingState()
     {
         GunData currentGunData = gunDatas[(int)currentGunType];
-        // µ¥µãÉä»÷£¨¶ÔÓÚ°ë×Ô¶¯»òÈ«×Ô¶¯ÎäÆ÷¶¼ÊÊÓÃ£©
+        // å•ç‚¹å°„å‡»ï¼ˆå¯¹äºåŠè‡ªåŠ¨æˆ–å…¨è‡ªåŠ¨æ­¦å™¨éƒ½é€‚ç”¨ï¼‰
         if (isSingleFire && currentMagazineAmmo > 0)
         {
-            if (Time.time >= lastFireTime + currentGunData.singleFireRate)  // Ö»ÓĞµ±Éä»÷¼ä¸ôÂú×ãÊ±²ÅÔÊĞíÉä»÷
+            if (Time.time >= lastFireTime + currentGunData.singleFireRate)  // åªæœ‰å½“å°„å‡»é—´éš”æ»¡è¶³æ—¶æ‰å…è®¸å°„å‡»
             {
                 singleFireTrigger = true;
-                lastFireTime = Time.time;   // ¸üĞÂ×îºóÉä»÷Ê±¼ä
+                lastFireTime = Time.time;   // æ›´æ–°æœ€åå°„å‡»æ—¶é—´
             }
         }
-        // ×Ô¶¯Éä»÷£¨½öÈ«×Ô¶¯ÎäÆ÷£©
+        // è‡ªåŠ¨å°„å‡»ï¼ˆä»…å…¨è‡ªåŠ¨æ­¦å™¨ï¼‰
         if (currentGunData.fireMode == FireMode.FullAuto)
         {
             if(isAutoFire && currentMagazineAmmo > 0)
             {
-                // ¼ì²éÉä»÷¼ä¸ôÊÇ·ñÂú×ã
+                // æ£€æŸ¥å°„å‡»é—´éš”æ˜¯å¦æ»¡è¶³
                 if (Time.time >= lastFireTime + currentGunData.fullAutoFireRate)
                 {
-                    // Âú×ãÉä»÷¼ä¸ô£¬±£³ÖÉä»÷×´Ì¬
+                    // æ»¡è¶³å°„å‡»é—´éš”ï¼Œä¿æŒå°„å‡»çŠ¶æ€
                     autoFireTrigger = true;
-                    lastFireTime = Time.time;   // ¸üĞÂ×îºóÉä»÷Ê±¼ä
+                    lastFireTime = Time.time;   // æ›´æ–°æœ€åå°„å‡»æ—¶é—´
                 }
             }
         }
-        // ¼ì²âÊó±ê×ó¼üÊÍ·ÅÊÂ¼ş
+        // æ£€æµ‹é¼ æ ‡å·¦é”®é‡Šæ”¾äº‹ä»¶
         if (Input.GetKeyUp(KeyCode.Mouse0))
         {
-            // ÊÍ·ÅÊó±ê×ó¼ü£¬Í£Ö¹Éä»÷
+            // é‡Šæ”¾é¼ æ ‡å·¦é”®ï¼Œåœæ­¢å°„å‡»
             isSingleFire = false;
             isAutoFire = false;
         }
     }
 
-    // ·½·¨£º×Óµ¯¹ÜÀí
+    // æ–¹æ³•ï¼šå­å¼¹ç®¡ç†
     private void HandleAmmo()
     {
-        // ÏŞÖÆĞ¯µ¯Êı
+        // é™åˆ¶æºå¼¹æ•°
         if(currentCarriedAmmo >= maxCarriedAmmo)
         {
             currentCarriedAmmo = maxCarriedAmmo;
         }
-        // ÅĞ¶ÏÄÜ·ñ»»µ¯
+        // åˆ¤æ–­èƒ½å¦æ¢å¼¹
         if (currentMagazineAmmo == magazineSize || currentCarriedAmmo == 0) canReload = false;
         else canReload = true;
-        // »»µ¯¼ÆËã
+        // æ¢å¼¹è®¡ç®—
         if (canReload && isReload)
         {
-            // 1.µ±Ç°µ¯Ï»×Óµ¯Êı + µ±Ç°Ğ¯µ¯Êı > µ¯Ï»ÈİÁ¿
+            // 1.å½“å‰å¼¹åŒ£å­å¼¹æ•° + å½“å‰æºå¼¹æ•° > å¼¹åŒ£å®¹é‡
             if (currentMagazineAmmo + currentCarriedAmmo > magazineSize)
             {
                 currentCarriedAmmo -= (magazineSize - currentMagazineAmmo);
                 currentMagazineAmmo = magazineSize;
             }
-            // 2.µ±Ç°µ¯Ï»×Óµ¯Êı + µ±Ç°Ğ¯µ¯Êı < µ¯Ï»ÈİÁ¿
+            // 2.å½“å‰å¼¹åŒ£å­å¼¹æ•° + å½“å‰æºå¼¹æ•° < å¼¹åŒ£å®¹é‡
             if (currentMagazineAmmo + currentCarriedAmmo <= magazineSize)
             {
                 currentMagazineAmmo += currentCarriedAmmo;

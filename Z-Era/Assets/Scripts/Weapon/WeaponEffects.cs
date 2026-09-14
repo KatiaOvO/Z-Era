@@ -22,7 +22,7 @@ public class WeaponEffects : MonoBehaviour
     [Tooltip("弹壳预制体")]
     private GameObject casing;
     [Tooltip("子弹速度")]
-    public float bulletSpeed = 100f;
+    public float bulletSpeed = 500f;
     #endregion
 
     #region 当前武器
@@ -209,7 +209,13 @@ public class WeaponEffects : MonoBehaviour
             bulletInstance.Launch(shootDirection * bulletSpeed);
         }
         // 视角后坐力
-        cameraRecoil.PlayRecoil();
+        GunData gunData = weaponController.CurrentGunData;
+
+        cameraRecoil.PlayRecoil(
+            gunData.recoilPitch,
+            gunData.recoilYaw,
+            gunData.slowShotInterval
+        );
         // 抛出弹壳
         if (casing == null)
         {
