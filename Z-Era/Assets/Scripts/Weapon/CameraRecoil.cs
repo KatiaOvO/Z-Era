@@ -22,8 +22,8 @@ public class CameraRecoil : MonoBehaviour
     private float kickYaw = 0.12f;
 
     [SerializeField, Min(0f)]
-    [Tooltip("武器未单独配置时，慢速单点的间隔阈值")]
-    private float slowShotInterval = 0.25f;
+    [Tooltip("武器未单独配置时，后坐力恢复的平滑时间")]
+    private float recoilReturnTime = 0.2f;
 
     [Header("Visual Roll")]
     [SerializeField, Min(0f)]
@@ -40,7 +40,6 @@ public class CameraRecoil : MonoBehaviour
 
     private float currentOffset;
     private float offsetVelocity;
-    private float lastShotTime = -Mathf.Infinity;
 
     private void Awake()
     {
@@ -63,7 +62,7 @@ public class CameraRecoil : MonoBehaviour
     public void PlayRecoil(
         float weaponKickPitch,
         float weaponKickYaw,
-        float weaponSlowShotInterval)
+        float weaponRecoilReturnTime)
     {
         // 武器没有单独配置时（旧场景数据为0），使用这里的默认值
         if (weaponKickPitch <= 0f)
@@ -76,38 +75,25 @@ public class CameraRecoil : MonoBehaviour
             weaponKickYaw = kickYaw;
         }
 
-        if (weaponSlowShotInterval <= 0f)
+        if (weaponRecoilReturnTime <= 0f)
         {
-            weaponSlowShotInterval = slowShotInterval;
+            weaponRecoilReturnTime = recoilReturnTime;
         }
 
         if (playerController != null)
         {
-            float timeSinceLastShot = Time.time - lastShotTime;
-            lastShotTime = Time.time;
-
             // 水平左右各一半范围随机
             float yawAmount = Random.Range(
                 -weaponKickYaw,
                 weaponKickYaw
             );
 
-            if (timeSinceLastShot >= weaponSlowShotInterval)
-            {
-                // 慢速单点：临时后坐力，会自动恢复
-                playerController.AddTemporaryRecoil(
-                    weaponKickPitch,
-                    yawAmount
-                );
-            }
-            else
-            {
-                // 快速单点或全自动：永久后坐力，保持现有累积效果
-                playerController.AddRecoil(
-                    weaponKickPitch,
-                    yawAmount
-                );
-            }
+            // 所有后坐力都走临时偏移
+            playerController.AddTemporaryRecoil(
+                weaponKickPitch,
+                yawAmount,
+                weaponRecoilReturnTime
+            );
         }
 
         // 镜头左右侧倾的视觉晃动
@@ -119,6 +105,15 @@ public class CameraRecoil : MonoBehaviour
             -maxOffset,
             maxOffset
         );
+    }
+
+    // 方法：设置武器是否正在射击
+    public void SetFiring(bool firing)
+    {
+        if (playerController != null)
+        {
+            playerController.SetFiring(firing);
+        }
     }
 
     private void LateUpdate()

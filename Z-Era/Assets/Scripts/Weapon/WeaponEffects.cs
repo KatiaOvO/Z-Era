@@ -132,7 +132,18 @@ public class WeaponEffects : MonoBehaviour
 
     void Update()
     {
+        if (weaponController == null || cameraRecoil == null)
+        {
+            return;
+        }
 
+        // 只有全自动武器在按住左键且还有子弹时，才算正在射击
+        bool isFiring =
+            weaponController.CurrentGunData.fireMode == FireMode.FullAuto
+            && Input.GetKey(KeyCode.Mouse0)
+            && weaponController.currentMagazineAmmo > 0;
+
+        cameraRecoil.SetFiring(isFiring);
     }
 
     // 方法：武器效果初始化
@@ -214,7 +225,7 @@ public class WeaponEffects : MonoBehaviour
         cameraRecoil.PlayRecoil(
             gunData.recoilPitch,
             gunData.recoilYaw,
-            gunData.slowShotInterval
+            gunData.recoilReturnTime
         );
         // 抛出弹壳
         if (casing == null)

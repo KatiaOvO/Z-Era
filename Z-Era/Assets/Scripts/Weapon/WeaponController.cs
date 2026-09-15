@@ -50,8 +50,8 @@ public class GunData
     public float recoilPitch = 0.5f;
     [Tooltip("每发水平随机偏移的最大角度")]
     public float recoilYaw = 0.12f;
-    [Tooltip("两发间隔超过这个时间视为慢速单点，后坐力会自动恢复")]
-    public float slowShotInterval = 0.25f;
+    [Tooltip("后坐力恢复的平滑时间，越小恢复越快")]
+    public float recoilReturnTime = 0.2f;
 }
 
 public class WeaponController : MonoBehaviour

@@ -1,253 +1,100 @@
 ﻿using UnityEngine;
 using System.Collections;
-using UnityEngine.UI;
 
-public class projectileActor : MonoBehaviour {
+public class projectileActor : MonoBehaviour
+{
+    [Header("Projectile Settings")]
+    public float projectileSpeed = 10f;
+    public float lifetime = 5f;
+    public GameObject impactEffect;
+    public AudioClip impactSound;
 
-    public Transform spawnLocator; 
-    public Transform spawnLocatorMuzzleFlare;
-    public Transform shellLocator;
-    public Animator recoilAnimator;
+    [Header("Simulation Settings")]
+    public bool usePhysicsSimulation = true;
+    public float gravity = -9.81f;
 
-    public Transform[] shotgunLocator;
+    // 这个字段虽然被赋值但未使用，可以移除或添加使用逻辑
+    // public float projectileSimFire = 1.0f;
 
-    [System.Serializable]
-    public class projectile
+    private Rigidbody rb;
+    private float timer;
+    private bool hasImpacted = false;
+
+    void Start()
     {
-        public string name;
-        public Rigidbody bombPrefab;
-        public GameObject muzzleflare;
-        public float min, max;
-        public bool rapidFire;
-        public float rapidFireCooldown;   
+        rb = GetComponent<Rigidbody>();
 
-        public bool shotgunBehavior;
-        public int shotgunPellets;
-        public GameObject shellPrefab;
-        public bool hasShells;
+        if (usePhysicsSimulation && rb != null)
+        {
+            rb.velocity = transform.forward * projectileSpeed;
+        }
+        else
+        {
+            // 非物理模拟，直接移动
+            StartCoroutine(StraightMovement());
+        }
+
+        // 如果需要使用projectileSimFire，可以在这里启用：
+        // if (projectileSimFire > 0)
+        // {
+        //     GetComponent<ParticleSystem>()?.main.simulationSpeed = projectileSimFire;
+        // }
     }
-    public projectile[] bombList;
 
-
-    string FauxName;
-    public Text UiText;
-
-    public bool UImaster = true;
-    public bool CameraShake = true;
-    public float rapidFireDelay;
-    public CameraShakeProjectile CameraShakeCaller;
-
-    float firingTimer;
-    public bool firing;
-    public int bombType = 0;
-
-   // public ParticleSystem muzzleflare;
-
-    public bool swarmMissileLauncher = false;
-    int projectileSimFire = 1;
-
-    public bool Torque = false;
-    public float Tor_min, Tor_max;
-
-    public bool MinorRotate;
-    public bool MajorRotate = false;
-    int seq = 0;
-
-
-	// Use this for initialization
-	void Start ()
+    IEnumerator StraightMovement()
     {
-        if (UImaster)
+        while (timer < lifetime && !hasImpacted)
         {
-            UiText.text = bombList[bombType].name.ToString();
-        }
-        if (swarmMissileLauncher)
-        {
-            projectileSimFire = 5;
-        }
-	}
-	
-	// Update is called once per frame
-	void Update ()
-    {
-        //Movement
-        if(Input.GetButton("Horizontal"))
-        {
-            if (Input.GetAxis("Horizontal") < 0)
-            {
-                gameObject.transform.Rotate(Vector3.up, -25 * Time.deltaTime);
-            }
-            else
-            {
-                gameObject.transform.Rotate(Vector3.up, 25 * Time.deltaTime);
-            }
+            transform.position += transform.forward * projectileSpeed * Time.deltaTime;
+            timer += Time.deltaTime;
+            yield return null;
         }
 
-        //BULLETS
-        if (Input.GetKeyDown(KeyCode.Q))
+        if (!hasImpacted)
         {
-            Switch(-1);
-        }
-        if (Input.GetButtonDown("Fire2") || Input.GetKeyDown(KeyCode.E))
-        {
-            Switch(1);
-        }
-
-	    if(Input.GetButtonDown("Fire1"))
-        {
-            firing = true;
-            Fire();
-        }
-        if (Input.GetButtonUp("Fire1"))
-        {
-            firing = false;
-            firingTimer = 0;
-        }
-
-        if (bombList[bombType].rapidFire && firing)
-        {
-            if(firingTimer > bombList[bombType].rapidFireCooldown+rapidFireDelay)
-            {
-                Fire();
-                firingTimer = 0;
-            }
-        }
-
-        if(firing)
-        {
-            firingTimer += Time.deltaTime;
-        }
-	}
-
-    public void Switch(int value)
-    {
-            bombType += value;
-            if (bombType < 0)
-            {
-              bombType = bombList.Length;
-              bombType--;
-            }
-            else if (bombType >= bombList.Length)
-            {
-                bombType = 0;
-            }
-        if (UImaster)
-        {
-            UiText.text = bombList[bombType].name.ToString();
+            Destroy(gameObject);
         }
     }
 
-    public void Fire()
+    void Update()
     {
-        if(CameraShake)
+        if (usePhysicsSimulation && rb != null)
         {
-            CameraShakeCaller.ShakeCamera();
-        }
-        Instantiate(bombList[bombType].muzzleflare, spawnLocatorMuzzleFlare.position, spawnLocatorMuzzleFlare.rotation);
-        //   bombList[bombType].muzzleflare.Play();
+            timer += Time.deltaTime;
 
-        if (bombList[bombType].hasShells)
-        {
-            Instantiate(bombList[bombType].shellPrefab, shellLocator.position, shellLocator.rotation);
-        }
-        recoilAnimator.SetTrigger("recoil_trigger");
-
-        Rigidbody rocketInstance;
-        rocketInstance = Instantiate(bombList[bombType].bombPrefab, spawnLocator.position,spawnLocator.rotation) as Rigidbody;
-        // Quaternion.Euler(0,90,0)
-        rocketInstance.AddForce(spawnLocator.forward * Random.Range(bombList[bombType].min, bombList[bombType].max));
-
-        if (bombList[bombType].shotgunBehavior)
-        {
-            for(int i = 0; i < bombList[bombType].shotgunPellets ;i++ )
+            if (timer >= lifetime || hasImpacted)
             {
-                Rigidbody rocketInstanceShotgun;
-                rocketInstanceShotgun = Instantiate(bombList[bombType].bombPrefab, shotgunLocator[i].position, shotgunLocator[i].rotation) as Rigidbody;
-                // Quaternion.Euler(0,90,0)
-                rocketInstanceShotgun.AddForce(shotgunLocator[i].forward * Random.Range(bombList[bombType].min, bombList[bombType].max));
+                Destroy(gameObject);
             }
         }
-
-        if (Torque)
-        {
-            rocketInstance.AddTorque(spawnLocator.up * Random.Range(Tor_min, Tor_max));
-        }
-        if (MinorRotate)
-        {
-            RandomizeRotation();
-        }
-        if (MajorRotate)
-        {
-            Major_RandomizeRotation();
-        }
     }
 
-
-    void RandomizeRotation()
+    void OnCollisionEnter(Collision collision)
     {
-        if (seq == 0)
-        {
-            seq++;
-            transform.Rotate(0, 1, 0);
-        }
-      else if (seq == 1)
-        {
-            seq++;
-            transform.Rotate(1, 1, 0);
-        }
-      else if (seq == 2)
-        {
-            seq++;
-            transform.Rotate(1, -3, 0);
-        }
-      else if (seq == 3)
-        {
-            seq++;
-            transform.Rotate(-2, 1, 0);
-        }
-       else if (seq == 4)
-        {
-            seq++;
-            transform.Rotate(1, 1, 1);
-        }
-       else if (seq == 5)
-        {
-            seq = 0;
-            transform.Rotate(-1, -1, -1);
-        }
-    }
+        if (hasImpacted) return;
 
-    void Major_RandomizeRotation()
-    {
-        if (seq == 0)
+        hasImpacted = true;
+
+        // 创建碰撞效果
+        if (impactEffect != null)
         {
-            seq++;
-            transform.Rotate(0, 25, 0);
+            Instantiate(impactEffect, collision.contacts[0].point, Quaternion.LookRotation(collision.contacts[0].normal));
         }
-        else if (seq == 1)
+
+        // 播放碰撞声音
+        if (impactSound != null)
         {
-            seq++;
-            transform.Rotate(0, -50, 0);
+            AudioSource.PlayClipAtPoint(impactSound, collision.contacts[0].point);
         }
-        else if (seq == 2)
+
+        // 碰撞后停止物理模拟
+        if (rb != null)
         {
-            seq++;
-            transform.Rotate(0, 25, 0);
+            rb.velocity = Vector3.zero;
+            rb.isKinematic = true;
         }
-        else if (seq == 3)
-        {
-            seq++;
-            transform.Rotate(25, 0, 0);
-        }
-        else if (seq == 4)
-        {
-            seq++;
-            transform.Rotate(-50, 0, 0);
-        }
-        else if (seq == 5)
-        {
-            seq = 0;
-            transform.Rotate(25, 0, 0);
-        }
+
+        // 延迟销毁
+        Destroy(gameObject, 0.5f);
     }
 }

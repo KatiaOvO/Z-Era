@@ -91,4 +91,15 @@ public class BulletHandle : MonoBehaviour
             Destroy(gameObject);    // 此处为兜底销毁，正常情况下不会走到这个else，目的是防止子弹在对象池引用异常后永远不会消失
         }
     }
+
+    // 
+    private void OnTriggerEnter(Collider other)
+    {
+        Debug.Log("触发了: " + other.name);  // 先不判断 IDamageable，看能不能触发
+        IDamageable zombie = other.GetComponentInParent<IDamageable>();
+        if (zombie != null)
+        {
+            Debug.Log("命中丧尸: " + other.name);
+        }
+    }
 }

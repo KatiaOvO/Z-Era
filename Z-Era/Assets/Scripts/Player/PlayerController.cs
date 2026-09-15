@@ -35,15 +35,16 @@ public class PlayerController : MonoBehaviour
     [Tooltip("记录当前相机的垂直旋转角度")]
     private float rotationX = 0.0f;
 
-    [Header("慢速单点后坐力恢复")]
+    [Header("后坐力恢复")]
     [SerializeField, Min(0.01f)]
-    [Tooltip("慢速单点后坐力恢复的平滑时间")]
+    [Tooltip("后坐力偏移开始恢复后的平滑时间")]
     private float temporaryRecoilReturnTime = 0.2f;
 
     private float temporaryRecoilPitch;
     private float temporaryRecoilYaw;
     private float temporaryRecoilPitchVelocity;
     private float temporaryRecoilYawVelocity;
+    private bool isFiring;
     #endregion
 
     void Start()
@@ -109,20 +110,23 @@ public class PlayerController : MonoBehaviour
         rotationX -= mouseY;
         rotationX = Mathf.Clamp(rotationX, -maxLookAngle, maxLookAngle);
 
-        // 临时后坐力平滑恢复到 0
-        temporaryRecoilPitch = Mathf.SmoothDamp(
-            temporaryRecoilPitch,
-            0f,
-            ref temporaryRecoilPitchVelocity,
-            temporaryRecoilReturnTime
-        );
+        // 武器正在射击时不恢复，停火或弹匣为空时立即恢复
+        if (!isFiring)
+        {
+            temporaryRecoilPitch = Mathf.SmoothDamp(
+                temporaryRecoilPitch,
+                0f,
+                ref temporaryRecoilPitchVelocity,
+                temporaryRecoilReturnTime
+            );
 
-        temporaryRecoilYaw = Mathf.SmoothDamp(
-            temporaryRecoilYaw,
-            0f,
-            ref temporaryRecoilYawVelocity,
-            temporaryRecoilReturnTime
-        );
+            temporaryRecoilYaw = Mathf.SmoothDamp(
+                temporaryRecoilYaw,
+                0f,
+                ref temporaryRecoilYawVelocity,
+                temporaryRecoilReturnTime
+            );
+        }
 
         // 最终相机角度 = 永久后坐力后的基础角度 + 临时后坐力
         float finalPitch = Mathf.Clamp(
@@ -143,20 +147,21 @@ public class PlayerController : MonoBehaviour
     }
 
     // 方法：添加后坐力（由 CameraRecoil 调用）
-    public void AddRecoil(float pitchAmount, float yawAmount)
-    {
-        // 向上抬：rotationX 变小，视角永久改变
-        rotationX -= pitchAmount;
-        rotationX = Mathf.Clamp(rotationX, -maxLookAngle, maxLookAngle);
-
-        // 水平方向：直接转动 Player，视角永久改变
-        transform.Rotate(Vector3.up * yawAmount);
-    }
-
-    // 方法：添加会恢复的临时后坐力（慢速单点）
-    public void AddTemporaryRecoil(float pitchAmount, float yawAmount)
+    public void AddTemporaryRecoil(
+        float pitchAmount,
+        float yawAmount,
+        float returnTime)
     {
         temporaryRecoilPitch += pitchAmount;
         temporaryRecoilYaw += yawAmount;
+
+        // 使用当前武器的恢复速度
+        temporaryRecoilReturnTime = returnTime;
+    }
+
+    // 方法：设置武器是否正在射击（由 CameraRecoil 调用）
+    public void SetFiring(bool firing)
+    {
+        isFiring = firing;
     }
 }
