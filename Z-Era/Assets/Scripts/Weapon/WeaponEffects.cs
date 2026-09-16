@@ -72,7 +72,7 @@ public class WeaponEffects : MonoBehaviour
     }
 
     // 定义10把武器的效果
-    public WeaponEffectConfig[] weaponEffectConfigs = new WeaponEffectConfig[10]
+    public WeaponEffectConfig[] weaponEffectConfigs = new WeaponEffectConfig[9]
     {
         new WeaponEffectConfig
         {
@@ -93,10 +93,6 @@ public class WeaponEffects : MonoBehaviour
         new WeaponEffectConfig
         {
             gunType = GunType.M4A4
-        },
-        new WeaponEffectConfig
-        {
-            gunType = GunType.XM1014
         },
         new WeaponEffectConfig
         {

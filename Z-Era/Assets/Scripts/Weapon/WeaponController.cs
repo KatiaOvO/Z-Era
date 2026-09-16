@@ -10,7 +10,6 @@ public enum GunType
     Tec9,
     AK47,
     M4A4,
-    XM1014,
     Vector,
     Uzi,
     P90,
@@ -76,8 +75,6 @@ public class WeaponController : MonoBehaviour
     private bool isInspect;
     [Tooltip("匕首攻击判断参数")]
     private bool isKnifeAttack;
-    [Tooltip("是否能开火判断参数")]
-    private bool canFire;
     [Tooltip("是否能换弹判断参数")]
     private bool canReload;
     [Tooltip("换弹判断参数")]
@@ -104,7 +101,7 @@ public class WeaponController : MonoBehaviour
     #endregion
 
     #region 定义10把枪的属性数组
-    public GunData[] gunDatas = new GunData[10]
+    public GunData[] gunDatas = new GunData[9]
     {
         // Glock 20发，半自动
         new GunData
@@ -165,18 +162,6 @@ public class WeaponController : MonoBehaviour
             fullAutoFireRate = 0.15f,
             damage = 20,
             range = 65f
-        },
-        // XM1014 7发，半自动
-        new GunData
-        {
-            gunType = GunType.XM1014,
-            fireMode = FireMode.SemiAuto,
-            magezineSize = 7,
-            maxCarriedAmmo = 42,
-            singleFireRate = 1.5f,
-            fullAutoFireRate = 0.0f,
-            damage = 100,
-            range = 30f
         },
         // Vector 20发，全自动
         new GunData
@@ -278,6 +263,8 @@ public class WeaponController : MonoBehaviour
     {
         // 获取当前武器在枚举中的索引
         int currentWeaponIndex = (int)currentGunType;
+        // 获取当前武器对应的动画器图层
+        int currentAnimatorLayer = currentWeaponIndex + 1;
         // 获取武器总数确定循环轮数
         int weaponNum = gunDatas.Length;
         // 循环：将动画器中的对应的武器图层的权重设置为1
@@ -294,39 +281,39 @@ public class WeaponController : MonoBehaviour
                 animator.SetLayerWeight(traverseWeaponIdex + 1, 0);
             }
         }
-        // 播放指定动画时，只有播放完当前动画之后才能播放其他动画，包括：匕首攻击、两种换弹
+        // 播放指定动画时，只有播放完当前动画之后才能播放其他动画，包括：匕首攻击、两种换弹、取出武器
         AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(currentWeaponIndex + 1);
-        if (state.IsName("KnifeAttack") || state.IsName("ReloadOutOfAmmo") || state.IsName("ReloadLeftAmmo"))
+        if (state.IsName("KnifeAttack") || state.IsName("ReloadOutOfAmmo") || state.IsName("ReloadLeftAmmo") || state.IsName("TakeOutWeapon"))
         {
             singleFireTrigger = false;
             autoFireTrigger = false;
             return;
         }
         animator.SetBool("walk", isWalk);
-        if (isInspect) animator.Play("Inspect");
-        if (isKnifeAttack) animator.Play("KnifeAttack");
+        if (isInspect) animator.Play("Inspect", currentAnimatorLayer);
+        if (isKnifeAttack) animator.Play("KnifeAttack", currentAnimatorLayer);
         if(singleFireTrigger)
         {
-            animator.Play("Fire");
+            animator.Play("Fire", currentAnimatorLayer);
             weaponEffects.ShootEffects();   // 调用weaponEffects.cs中的ShootEffects()方法，射击时产生特效
             currentMagazineAmmo--;  // 当前弹匣子弹数-1
             singleFireTrigger = false;
         }
         else if(autoFireTrigger)
         {
-            animator.Play("Fire");
+            animator.Play("Fire", currentAnimatorLayer);
             weaponEffects.ShootEffects();   // 调用weaponEffects.cs中的ShootEffects()方法，射击时产生特效
             currentMagazineAmmo--;  // 当前弹匣子弹数-1
             autoFireTrigger = false;
         }
         if(canReload && isReload && currentMagazineAmmo == 0)
         {
-            animator.Play("ReloadOutOfAmmo");   
+            animator.Play("ReloadOutOfAmmo", currentAnimatorLayer);   
             weaponEffects.ReloadEffects();  // 调用weaponEffects.cs中的ReloadEffects()方法，换弹时产生特效
         }
         else if(canReload && isReload && currentMagazineAmmo > 0)
         {
-            animator.Play("ReloadLeftAmmo");
+            animator.Play("ReloadLeftAmmo", currentAnimatorLayer);
             weaponEffects.ReloadEffects();  // 调用weaponEffects.cs中的ReloadEffects()方法，换弹时产生特效
         }
     }
