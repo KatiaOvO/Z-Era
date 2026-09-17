@@ -37,6 +37,13 @@ public class WeaponEffects : MonoBehaviour
     public Camera weaponCamera;
     #endregion
 
+    #region 音频
+    [Tooltip("取出武器音效")]
+    public AudioClip takeOutWeaponSound;
+    [Tooltip("收起武器音效")]
+    public AudioClip holsterWeaponSound;
+    #endregion
+
     #region 引用
     private WeaponController weaponController;
     private CameraRecoil cameraRecoil;
@@ -252,6 +259,21 @@ public class WeaponEffects : MonoBehaviour
         else
         {
             audioSource.clip = reloadSound_OutOfAmmo;
+            audioSource.Play();
+        }
+    }
+
+    // 方法：取出武器与收起武器
+    public void PlayWeaponActionSound(string action)
+    {
+        if(action == "takeout")
+        {
+            audioSource.clip = takeOutWeaponSound;
+            audioSource.Play();
+        }
+        else if(action == "holster")
+        {
+            audioSource.clip = holsterWeaponSound;
             audioSource.Play();
         }
     }

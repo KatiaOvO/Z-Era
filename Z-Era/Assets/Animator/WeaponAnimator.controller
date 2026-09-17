@@ -232,7 +232,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: TakeOutWeapon
-  m_Speed: 1
+  m_Speed: -1
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -2100026878508518509}
@@ -245,7 +245,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 79fdfe06d6a494343be6b8746461fdec, type: 2}
+  m_Motion: {fileID: 7400000, guid: 121db6d958de35c4d9f088e87fc12ee7, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -531,7 +531,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: TakeOutWeapon
-  m_Speed: 1
+  m_Speed: -1
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -4978834321035658448}
@@ -544,7 +544,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: bfcefa78323da764daf9f72f41b1bfda, type: 2}
+  m_Motion: {fileID: 7400000, guid: 36e41c99f58750a4490606660e235361, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -1773,7 +1773,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: TakeOutWeapon
-  m_Speed: 1
+  m_Speed: -1
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 3676700941771300694}
@@ -1786,7 +1786,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: c4622900e13078d4986a7dd1b96c0def, type: 2}
+  m_Motion: {fileID: 7400000, guid: c5c6cc3f5496e9a4f84ad7ceb3984c67, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -1847,7 +1847,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: TakeOutWeapon
-  m_Speed: 1
+  m_Speed: -1
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -7517031866857696935}
@@ -1860,7 +1860,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 2f3641c520bb04545af2020462fa0f4d, type: 2}
+  m_Motion: {fileID: 7400000, guid: 0a1cf1a4eb3df9a47b6f15435bb1187f, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -3251,7 +3251,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: TakeOutWeapon
-  m_Speed: 1
+  m_Speed: -1
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 1709767587438905898}
@@ -3264,7 +3264,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 056b025ab85d61e44b278206b6c04a02, type: 2}
+  m_Motion: {fileID: 7400000, guid: bc8f98e8fcd3fde4095ecb76359c1971, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -3454,7 +3454,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: TakeOutWeapon
-  m_Speed: 1
+  m_Speed: -1
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -1889811233480551088}
@@ -3467,7 +3467,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 6cacf2bbe54ed694eacdb13f8f9ffe88, type: 2}
+  m_Motion: {fileID: 7400000, guid: 51c9b4d79f71a1c47936cd80fb3c1b2f, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -3746,7 +3746,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: TakeOutWeapon
-  m_Speed: 1
+  m_Speed: -1
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -5149998151621260625}
@@ -3759,7 +3759,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: be889f6209f4d5e4686640c43090fcc0, type: 2}
+  m_Motion: {fileID: 7400000, guid: 202adfbf0e071374280121583f3aa64a, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 

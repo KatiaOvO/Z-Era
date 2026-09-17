@@ -263,3 +263,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxLifeTime: 5
+  hitLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  bulletRadius: 0.05
+  bloodEffectPrefab: {fileID: 198446458854354212, guid: 6758d7eccbb98694fae2b07d701a2aed,
+    type: 3}
+  bloodEffectLifeTime: 0.5

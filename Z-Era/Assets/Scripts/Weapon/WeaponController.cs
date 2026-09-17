@@ -58,6 +58,8 @@ public class WeaponController : MonoBehaviour
     #region 组件
     [Tooltip("武器动画器")]
     private Animator animator;
+    [Tooltip("记录上一次的动画状态，用于只触发一次音效")]
+    private int previousAnimatorStateHash;
     #endregion
 
     #region 判断参数
@@ -281,14 +283,50 @@ public class WeaponController : MonoBehaviour
                 animator.SetLayerWeight(traverseWeaponIdex + 1, 0);
             }
         }
+        // 获取当前武器图层的动画状态
+        AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(currentAnimatorLayer);
+        AnimatorStateInfo nextState = animator.GetNextAnimatorStateInfo(currentAnimatorLayer);
+
+        // 如果正在过渡到 TakeOutWeapon / HolsterWeapon，提前获取目标状态
+        AnimatorStateInfo actionState = currentState;
+        if (animator.IsInTransition(currentAnimatorLayer))
+        {
+            if (nextState.IsName("TakeOutWeapon") || nextState.IsName("HolsterWeapon"))
+            {
+                actionState = nextState;
+            }
+        }
+
+        // 只在状态切换的那一帧播放音效
+        if (actionState.fullPathHash != previousAnimatorStateHash)
+        {
+            if (actionState.IsName("TakeOutWeapon"))
+            {
+                // 只要状态名是 TakeOutWeapon，就是取出动作
+                // 无论里面是 TakeOutWeapon 正向片段，还是 HolsterWeapon 的倒放片段
+                weaponEffects.PlayWeaponActionSound("takeout");
+            }
+            else if (actionState.IsName("HolsterWeapon"))
+            {
+                // 只要状态名是 HolsterWeapon，就是收起动作
+                weaponEffects.PlayWeaponActionSound("holster");
+            }
+
+            previousAnimatorStateHash = actionState.fullPathHash;
+        }
+
         // 播放指定动画时，只有播放完当前动画之后才能播放其他动画，包括：匕首攻击、两种换弹、取出武器
-        AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(currentWeaponIndex + 1);
-        if (state.IsName("KnifeAttack") || state.IsName("ReloadOutOfAmmo") || state.IsName("ReloadLeftAmmo") || state.IsName("TakeOutWeapon"))
+        if (currentState.IsName("KnifeAttack") ||
+            currentState.IsName("ReloadOutOfAmmo") ||
+            currentState.IsName("ReloadLeftAmmo") ||
+            currentState.IsName("TakeOutWeapon") ||
+            currentState.IsName("HolsterWeapon"))
         {
             singleFireTrigger = false;
             autoFireTrigger = false;
             return;
         }
+
         animator.SetBool("walk", isWalk);
         if (isInspect) animator.Play("Inspect", currentAnimatorLayer);
         if (isKnifeAttack) animator.Play("KnifeAttack", currentAnimatorLayer);
