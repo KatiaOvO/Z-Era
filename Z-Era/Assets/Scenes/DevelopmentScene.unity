@@ -13088,6 +13088,7 @@ GameObject:
   m_Component:
   - component: {fileID: 799353730}
   - component: {fileID: 799353731}
+  - component: {fileID: 799353732}
   m_Layer: 7
   m_Name: Add_Knee_L
   m_TagString: Untagged
@@ -13131,6 +13132,19 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.05
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &799353732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 799353729}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eeacefa7b93db346be1292155e72f6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitPart: 4
 --- !u!1 &810061662
 GameObject:
   m_ObjectHideFlags: 0
@@ -13141,6 +13155,7 @@ GameObject:
   m_Component:
   - component: {fileID: 810061663}
   - component: {fileID: 810061664}
+  - component: {fileID: 810061665}
   m_Layer: 7
   m_Name: Add_Feet_1_L
   m_TagString: Untagged
@@ -13184,6 +13199,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.095, y: 0.1, z: 0.1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &810061665
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 810061662}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eeacefa7b93db346be1292155e72f6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitPart: 7
 --- !u!1 &814677509
 GameObject:
   m_ObjectHideFlags: 0
@@ -16789,6 +16817,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1277273458}
   - component: {fileID: 1277273459}
+  - component: {fileID: 1277273460}
   m_Layer: 7
   m_Name: Add_Feet_2_R
   m_TagString: Untagged
@@ -16832,6 +16861,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.07, y: 0.1, z: 0.1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1277273460
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1277273457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eeacefa7b93db346be1292155e72f6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitPart: 7
 --- !u!137 &1279427713
 SkinnedMeshRenderer:
   m_ObjectHideFlags: 0
@@ -21270,6 +21312,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1359342087}
   - component: {fileID: 1359342088}
+  - component: {fileID: 1359342089}
   m_Layer: 7
   m_Name: Add_Feet_1_R
   m_TagString: Untagged
@@ -21313,6 +21356,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.095, y: 0.1, z: 0.1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1359342089
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1359342086}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eeacefa7b93db346be1292155e72f6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitPart: 7
 --- !u!1001 &1383269762
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21396,6 +21452,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1444343474}
   - component: {fileID: 1444343475}
+  - component: {fileID: 1444343476}
   m_Layer: 7
   m_Name: Add_Knee_R
   m_TagString: Untagged
@@ -21439,6 +21496,19 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.05
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1444343476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1444343473}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eeacefa7b93db346be1292155e72f6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitPart: 5
 --- !u!1 &1447291957
 GameObject:
   m_ObjectHideFlags: 0
@@ -23320,6 +23390,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1805924628}
   - component: {fileID: 1805924629}
+  - component: {fileID: 1805924630}
   m_Layer: 7
   m_Name: Add_Feet_2_L
   m_TagString: Untagged
@@ -23363,6 +23434,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.07, y: 0.1, z: 0.1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1805924630
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1805924627}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eeacefa7b93db346be1292155e72f6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitPart: 7
 --- !u!1001 &1806072557
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -28258,6 +28342,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1009317979285438725}
   - component: {fileID: 1014484402996035038}
+  - component: {fileID: 1014484402996035039}
   m_Layer: 7
   m_Name: LowerLeg_R
   m_TagString: Untagged
@@ -28288,6 +28373,19 @@ CapsuleCollider:
   m_Height: 0.3
   m_Direction: 0
   m_Center: {x: -0.19, y: 0.015, z: 0}
+--- !u!114 &1014484402996035039
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1014484402996035037}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eeacefa7b93db346be1292155e72f6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitPart: 6
 --- !u!1 &1014489231237390749
 GameObject:
   m_ObjectHideFlags: 0
@@ -28417,6 +28515,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1017444998884309749}
   - component: {fileID: 1017444998884309750}
+  - component: {fileID: 1017444998884309751}
   m_Layer: 7
   m_Name: UpperLeg_L
   m_TagString: Untagged
@@ -28694,6 +28793,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1009221975391498247}
   - component: {fileID: 1014655947254984967}
+  - component: {fileID: 1014655947254984968}
   m_Layer: 7
   m_Name: Spine_01
   m_TagString: Untagged
@@ -28722,6 +28822,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.67, y: 0.2, z: 0.35}
   m_Center: {x: -0.15, y: 0, z: 0}
+--- !u!114 &1014655947254984968
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1014655947254984965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eeacefa7b93db346be1292155e72f6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitPart: 0
 --- !u!1 &1014661331207498213
 GameObject:
   m_ObjectHideFlags: 0
@@ -28881,6 +28994,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1009366359581135819}
   - component: {fileID: 1014754431817103534}
+  - component: {fileID: 1014754431817103535}
   m_Layer: 7
   m_Name: LowerLeg_L
   m_TagString: Untagged
@@ -28911,6 +29025,19 @@ CapsuleCollider:
   m_Height: 0.3
   m_Direction: 0
   m_Center: {x: 0.19, y: -0.015, z: 0}
+--- !u!114 &1014754431817103535
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1014754431817103533}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eeacefa7b93db346be1292155e72f6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitPart: 6
 --- !u!1 &1014757713905762009
 GameObject:
   m_ObjectHideFlags: 0
@@ -29506,6 +29633,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1009006948207378037}
   - component: {fileID: 1099870388647652463}
+  - component: {fileID: 1099870388647652464}
   - component: {fileID: 1099870388647652465}
   m_Layer: 7
   m_Name: Zombie
@@ -29712,6 +29840,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1017639090439437121}
   - component: {fileID: 1017639090439437122}
+  - component: {fileID: 1017639090439437123}
   m_Layer: 7
   m_Name: UpperLeg_R
   m_TagString: Untagged
@@ -30122,6 +30251,19 @@ CapsuleCollider:
   m_Height: 0.3
   m_Direction: 0
   m_Center: {x: 0.19, y: 0, z: 0}
+--- !u!114 &1017444998884309751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1014558157332071789}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eeacefa7b93db346be1292155e72f6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitPart: 6
 --- !u!4 &1017527274468145175
 Transform:
   m_ObjectHideFlags: 0
@@ -30364,6 +30506,19 @@ CapsuleCollider:
   m_Height: 0.3
   m_Direction: 0
   m_Center: {x: -0.19, y: 0, z: 0}
+--- !u!114 &1017639090439437123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1015257213282475053}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eeacefa7b93db346be1292155e72f6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitPart: 6
 --- !u!4 &1017645437222818827
 Transform:
   m_ObjectHideFlags: 0
@@ -30765,6 +30920,18 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &1099870388647652464
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1015107139471776721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e1773c267eceaf46952e6fa6c1c8388, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &1099870388647652465
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -30774,9 +30941,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 1015107139471776721}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4aa52149939a8c5459a52f3696f08e20, type: 3}
+  m_Script: {fileID: 11500000, guid: 61e785f4204b6f24d9bf7feb5de216d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  bloodEffectPrefab: {fileID: 198446458854354212, guid: 6758d7eccbb98694fae2b07d701a2aed,
+    type: 3}
+  bloodEffectLifeTime: 0.5
 --- !u!137 &1150111936122504187
 SkinnedMeshRenderer:
   m_ObjectHideFlags: 0

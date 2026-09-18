@@ -7,7 +7,7 @@ public interface IDamageable
 }
 
 // 身体部位枚举
-public enum BodyPart
+public enum HitPart
 {
     Head,   // 头部
     Body,   // 身体
@@ -15,15 +15,25 @@ public enum BodyPart
     Arm_R,  // 右臂
     Knee_L, // 左膝盖
     Knee_R, // 右膝盖
-    Leg // 腿（不需要区分左右）
+    Leg, // 腿（不需要区分左右）
+    Feet    // 脚（不需要区分左右）
+}
+
+// 伤害来源
+public enum DamageSource
+{
+    Bullet, // 子弹
+    KnifeAttack,    //匕首攻击
+    ZombieAttack    // zombie攻击
 }
 
 // 伤害信息结构
 public struct DamageInfo
 {
     public float damage;           // 基础伤害（来自子弹）
-    public BodyPart hitPart;       // 击中部位
+    public HitPart hitPart;       // 击中部位
     public Vector3 hitPoint;       // 击中位置（世界坐标）
-    public Vector3 hitDirection;   // 击中方向（子弹飞来的方向，用于受击动画）
+    public DamageSource souece;     // 伤害来源
+    public GameObject attacker;     // 攻击者 
 }
 

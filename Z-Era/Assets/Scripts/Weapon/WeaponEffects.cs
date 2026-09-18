@@ -214,17 +214,20 @@ public class WeaponEffects : MonoBehaviour
         }
         // 2.从枪口到瞄准点的方向
         Vector3 shootDirection = (targetPoint - bulletSpawnPoint.position).normalized;
+        GunData gunData = weaponController.CurrentGunData;
         // 3.实例化子弹并朝向目标方向（修改过，原本使用Instantiate实例化，后引入对象池改为Get）
         Quaternion bulletRotation = Quaternion.LookRotation(shootDirection) * Quaternion.Euler(90f, 0f, 0f);    // 调整子弹为横向
         BulletHandle bulletInstance = bulletPool.Get(bullet, bulletSpawnPoint.position, bulletRotation);
-        // 4.赋予子弹速度
+        // 4.赋予子弹速度、伤害和攻击者
         if (bulletInstance != null)
         {
-            bulletInstance.Launch(shootDirection * bulletSpeed);
+            bulletInstance.Launch(
+                shootDirection * bulletSpeed,
+                gunData.damage,
+                weaponController.gameObject
+            );
         }
         // 视角后坐力
-        GunData gunData = weaponController.CurrentGunData;
-
         cameraRecoil.PlayRecoil(
             gunData.recoilPitch,
             gunData.recoilYaw,

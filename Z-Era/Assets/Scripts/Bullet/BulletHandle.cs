@@ -1,6 +1,3 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class BulletHandle : MonoBehaviour
@@ -39,12 +36,11 @@ public class BulletHandle : MonoBehaviour
     // 而是在 FixedUpdate() 中手动移动。
     private Vector3 bulletVelocity;
 
-    [Header("命中特效")]
-    [Tooltip("溅血粒子预制体")]
-    public ParticleSystem bloodEffectPrefab;
+    // 当前子弹伤害和攻击者，由 WeaponEffects 在发射时写入。
+    private float bulletDamage;
+    private GameObject bulletAttacker;
 
-    [Tooltip("溅血特效存活时间")]
-    public float bloodEffectLifeTime = 2f;
+    public float BulletDamage => bulletDamage;
 
     private void Awake()
     {
@@ -80,6 +76,8 @@ public class BulletHandle : MonoBehaviour
         spawnTime = Time.time;
         isColliding = false;
         bulletVelocity = Vector3.zero;
+        bulletDamage = 0f;
+        bulletAttacker = null;
 
         if (bulletRigidbody != null)
         {
@@ -132,7 +130,7 @@ public class BulletHandle : MonoBehaviour
 
                 transform.position = hit.point;
 
-                HandleHit(hit);
+                HandleHit(hit.collider, hit.point, hit.normal);
                 return;
             }
 
@@ -154,14 +152,22 @@ public class BulletHandle : MonoBehaviour
         RecycleBullet();
     }
 
-    private void HandleHit(RaycastHit hit)
+    private void HandleHit(Collider hitCollider, Vector3 hitPoint, Vector3 hitNormal)
     {
         isColliding = true;
 
         // 仅用于测试，确认命中后可以删除
-        Debug.Log($"Bullet hit: {hit.collider.name}");
+        Debug.Log($"Bullet hit: {hitCollider.name}");
 
-        SpawnHitEffect(hit.point, hit.normal);
+        ApplyDamage(hitCollider, hitPoint);
+
+        ZombieEffects zombieEffects =
+            hitCollider.GetComponentInParent<ZombieEffects>();
+
+        if (zombieEffects != null)
+        {
+            zombieEffects.PlayHitEffect(hitPoint, hitNormal);
+        }
 
         RecycleBullet();
     }
@@ -174,10 +180,8 @@ public class BulletHandle : MonoBehaviour
             return;
         }
 
-        isColliding = true;
         ContactPoint contact = collision.GetContact(0);
-        SpawnHitEffect(contact.point, contact.normal);
-        RecycleBullet();
+        HandleHit(collision.collider, contact.point, contact.normal);
     }
 
     // 触发器兜底：慢速子弹命中触发器时仍可触发。
@@ -189,36 +193,41 @@ public class BulletHandle : MonoBehaviour
             return;
         }
 
-        isColliding = true;
         Vector3 hitNormal = bulletVelocity.sqrMagnitude > 0f
             ? -bulletVelocity.normalized
             : Vector3.up;
 
-        SpawnHitEffect(transform.position, hitNormal);
-        RecycleBullet();
+        HandleHit(other, transform.position, hitNormal);
     }
 
-    // 在命中点生成溅血粒子效果
-    private void SpawnHitEffect(Vector3 hitPoint, Vector3 hitNormal)
+    // 对带有 IDamageable 的命中目标造成伤害
+    private void ApplyDamage(Collider hitCollider, Vector3 hitPoint)
     {
-        if (bloodEffectPrefab == null)
+        IDamageable damageable = hitCollider.GetComponentInParent<IDamageable>();
+        if (damageable == null)
         {
             return;
         }
 
-        Quaternion effectRotation = Quaternion.LookRotation(hitNormal);
-        ParticleSystem effect = Instantiate(
-            bloodEffectPrefab,
-            hitPoint,
-            effectRotation
-        );
+        // 从命中的 Collider 向上查找部位标记。
+        // 没找到时回退为躯干，保证未配置标记的目标仍能正常受伤。
+        HitPartMarker hitPartMarker =
+            hitCollider.GetComponentInParent<HitPartMarker>();
 
-        if (!effect.main.playOnAwake)
+        HitPart hitPart = hitPartMarker != null
+            ? hitPartMarker.Part
+            : HitPart.Body;
+
+        DamageInfo damageInfo = new DamageInfo
         {
-            effect.Play();
-        }
+            damage = bulletDamage,
+            hitPart = hitPart,
+            hitPoint = hitPoint,
+            souece = DamageSource.Bullet,
+            attacker = bulletAttacker
+        };
 
-        Destroy(effect.gameObject, bloodEffectLifeTime);
+        damageable.TakeDamage(damageInfo);
     }
 
     public void SetPool(BulletPool pool)
@@ -226,10 +235,12 @@ public class BulletHandle : MonoBehaviour
         bulletPool = pool;
     }
 
-    // 由 WeaponEffects 调用，传入子弹速度和方向
-    public void Launch(Vector3 velocity)
+    // 由 WeaponEffects 调用，传入子弹速度、伤害和攻击者
+    public void Launch(Vector3 velocity, float damage, GameObject attacker)
     {
         bulletVelocity = velocity;
+        bulletDamage = damage;
+        bulletAttacker = attacker;
     }
 
     // 回收条件：已经命中，或者超过最大存活时间
