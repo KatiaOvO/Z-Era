@@ -79,7 +79,7 @@ public class BulletHandle : MonoBehaviour
         bulletDamage = 0f;
         bulletAttacker = null;
 
-        if (bulletRigidbody != null)
+        if (bulletRigidbody != null && !bulletRigidbody.isKinematic)
         {
             bulletRigidbody.velocity = Vector3.zero;
             bulletRigidbody.angularVelocity = Vector3.zero;

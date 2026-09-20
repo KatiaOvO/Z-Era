@@ -10,6 +10,11 @@ public class ZombieController : MonoBehaviour , IDamageable
     private float health = 100f;
     #endregion
 
+    #region 参数
+    [Tooltip("判断是否死亡")]
+    private bool isDead = false;
+    #endregion
+
     #region 组件
     [Tooltip("动画器")]
     private Animator animator;
@@ -33,6 +38,7 @@ public class ZombieController : MonoBehaviour , IDamageable
         if(health <= 0)
         {
             health = 0;
+            isDead = true;
         }
         ZombieAnimation();
         ClearComponents();
@@ -84,22 +90,23 @@ public class ZombieController : MonoBehaviour , IDamageable
     {
         if(health <= 0)
         {
-            animator.Play("Death");
+            animator.SetBool("die", isDead);
         }
     }
 
-    // 方法：zombie死亡后清除碰撞体和触发器
+    // 方法：zombie死亡后清除碰撞体和触发器以及销毁自身
     private void ClearComponents()
     {
         // zombie生命值为0时清除character controller，以免后续影响碰撞
         if (health <= 0)
         {
-            Destroy(characterController);
+            // 由销毁改为设置禁用，因为ZombieAI.cs使用着CharacterController无法直接销毁
+            characterController.enabled = false;
         }
         // zombie死亡动画播放完毕后清除所有部位触发器，以免后续影响溅血粒子系统
         Collider[] triggers = GetComponentsInChildren<Collider>(includeInactive: true).Where(c => c.isTrigger && c.transform != transform).ToArray();
         AnimatorStateInfo info = animator.GetCurrentAnimatorStateInfo(0);
-        if (!info.IsName("Death")) return;
+        if (!info.IsName("Die")) return;
         if(info.normalizedTime >= 1.0f && !animator.IsInTransition(0))
         {
             foreach (var trigger in triggers)
@@ -107,6 +114,10 @@ public class ZombieController : MonoBehaviour , IDamageable
                 Destroy(trigger);
             }
             zombieEffects.ZombieDissolve();
+            if(zombieEffects.isFullyDissolved)
+            {
+                Destroy(gameObject);
+            }
         }
     }
 }

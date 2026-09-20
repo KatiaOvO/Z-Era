@@ -25,6 +25,8 @@ public class ZombieEffects : MonoBehaviour
     private float dissolveDuration = 4.0f;
     [Tooltip("溶解已经过去的时间")]
     private float elapsed = 0.5f;
+    [Tooltip("是否完全溶解")]
+    public bool isFullyDissolved = false;
     #endregion
 
     private void Start()
@@ -70,6 +72,7 @@ public class ZombieEffects : MonoBehaviour
         if(dissolveValue >= 1.0f)
         {
             dissolveValue = 1.0f;
+            isFullyDissolved = true;
         }
     }
 }

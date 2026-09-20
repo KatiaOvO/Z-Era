@@ -7434,7 +7434,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 2.67, y: 1, z: 2.39}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -12771,6 +12771,11 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  noiseEmitter: {fileID: 1062446610}
+  shootNoiseRadius: 35
+  shootAngerValue: 30
+  reloadNoiseRadius: 12
+  reloadAngerValue: 10
   bulletPool: {fileID: 814677510}
   weaponEffectConfigs:
   - gunType: 0
@@ -12952,6 +12957,55 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!1 &753307344
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 753307346}
+  - component: {fileID: 753307345}
+  m_Layer: 0
+  m_Name: NoiseManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &753307345
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 753307344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fc70244160f71243b4586f3cf77e1e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  zombieLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  maxNoiseResults: 32
+  logNoiseEvents: 0
+--- !u!4 &753307346
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 753307344}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.1298665, y: 0.94962615, z: 1.9000322}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &777906745
 GameObject:
   m_ObjectHideFlags: 0
@@ -13366,6 +13420,11 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  noiseEmitter: {fileID: 1062446610}
+  shootNoiseRadius: 35
+  shootAngerValue: 30
+  reloadNoiseRadius: 12
+  reloadAngerValue: 10
   bulletPool: {fileID: 814677510}
   weaponEffectConfigs:
   - gunType: 0
@@ -13872,7 +13931,9 @@ GameObject:
   - component: {fileID: 1062446607}
   - component: {fileID: 1062446602}
   - component: {fileID: 1062446608}
-  m_Layer: 0
+  - component: {fileID: 1062446609}
+  - component: {fileID: 1062446610}
+  m_Layer: 3
   m_Name: Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -13894,8 +13955,13 @@ MonoBehaviour:
   walkSpeed: 5
   gravity: -9.81
   walkSound: {fileID: 8300000, guid: 4d252f7555cc2b54f99792eb607b462b, type: 3}
+  noiseEmitter: {fileID: 1062446610}
+  footstepNoiseInterval: 0.5
+  footstepNoiseRadius: 6
+  footstepNoisePriority: 1
+  footstepAngerValue: 4
   mouseSensitivity: 2
-  maxLookAngle: 80
+  maxLookAngle: 90
   temporaryRecoilReturnTime: 0.2
 --- !u!143 &1062446603
 CharacterController:
@@ -13982,7 +14048,7 @@ Transform:
   m_GameObject: {fileID: 1062446601}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalPosition: {x: 7.13, y: 1, z: -8.42}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -14107,6 +14173,33 @@ MonoBehaviour:
   kickAngle: 2
   maxOffset: 5
   returnTime: 0.1
+--- !u!114 &1062446609
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1062446601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a90669c4f9b6c946a86ed522d9cd71d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  damageInvincibilityTime: 0.1
+--- !u!114 &1062446610
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1062446601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44cb27cf4c6eda642ab0efdf321ab913, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  noiseManager: {fileID: 753307345}
 --- !u!1 &1087892883
 GameObject:
   m_ObjectHideFlags: 0
@@ -21568,6 +21661,11 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  noiseEmitter: {fileID: 1062446610}
+  shootNoiseRadius: 35
+  shootAngerValue: 30
+  reloadNoiseRadius: 12
+  reloadAngerValue: 10
   bulletPool: {fileID: 814677510}
   weaponEffectConfigs:
   - gunType: 0
@@ -21926,6 +22024,11 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  noiseEmitter: {fileID: 1062446610}
+  shootNoiseRadius: 35
+  shootAngerValue: 30
+  reloadNoiseRadius: 12
+  reloadAngerValue: 10
   bulletPool: {fileID: 814677510}
   weaponEffectConfigs:
   - gunType: 0
@@ -22413,6 +22516,11 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  noiseEmitter: {fileID: 1062446610}
+  shootNoiseRadius: 35
+  shootAngerValue: 30
+  reloadNoiseRadius: 12
+  reloadAngerValue: 10
   bulletPool: {fileID: 814677510}
   weaponEffectConfigs:
   - gunType: 0
@@ -23019,6 +23127,11 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  noiseEmitter: {fileID: 1062446610}
+  shootNoiseRadius: 35
+  shootAngerValue: 30
+  reloadNoiseRadius: 12
+  reloadAngerValue: 10
   bulletPool: {fileID: 814677510}
   weaponEffectConfigs:
   - gunType: 0
@@ -23640,6 +23753,11 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  noiseEmitter: {fileID: 1062446610}
+  shootNoiseRadius: 35
+  shootAngerValue: 30
+  reloadNoiseRadius: 12
+  reloadAngerValue: 10
   bulletPool: {fileID: 814677510}
   weaponEffectConfigs:
   - gunType: 0
@@ -24010,6 +24128,11 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  noiseEmitter: {fileID: 1062446610}
+  shootNoiseRadius: 35
+  shootAngerValue: 30
+  reloadNoiseRadius: 12
+  reloadAngerValue: 10
   bulletPool: {fileID: 814677510}
   weaponEffectConfigs:
   - gunType: 0
@@ -26927,6 +27050,11 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  noiseEmitter: {fileID: 1062446610}
+  shootNoiseRadius: 35
+  shootAngerValue: 30
+  reloadNoiseRadius: 12
+  reloadAngerValue: 10
   bulletPool: {fileID: 814677510}
   weaponEffectConfigs:
   - gunType: 0
@@ -27606,7 +27734,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1015107139471776721}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.31496465, y: 0, z: 2.781}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -27663,7 +27791,7 @@ Transform:
   - {fileID: 1017723372027910749}
   - {fileID: 1017694571189345719}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1009012517274131129
 Transform:
   m_ObjectHideFlags: 0
@@ -29664,9 +29792,12 @@ GameObject:
   m_Component:
   - component: {fileID: 1009006948207378037}
   - component: {fileID: 1099870388647652463}
+  - component: {fileID: 1099870388647652466}
   - component: {fileID: 1099870388647652464}
   - component: {fileID: 1099870388647652465}
-  - component: {fileID: 1099870388647652466}
+  - component: {fileID: 1099870388647652467}
+  - component: {fileID: 1099870388647652468}
+  - component: {fileID: 1099870388647652469}
   m_Layer: 7
   m_Name: Zombie
   m_TagString: Untagged
@@ -31047,6 +31178,7 @@ MonoBehaviour:
     type: 3}
   bloodEffectLifeTime: 0.5
   dissolveDuration: 2.5
+  isFullyDissolved: 0
 --- !u!143 &1099870388647652466
 CharacterController:
   m_ObjectHideFlags: 0
@@ -31073,6 +31205,98 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0.935, z: 0}
+--- !u!114 &1099870388647652467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1015107139471776721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f63dbc66f3dd494c834f47e699272d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  viewDistance: 20
+  viewAngle: 110
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  obstacleLayer:
+    serializedVersion: 2
+    m_Bits: 23
+  eyeTransform: {fileID: 0}
+  eyeOffset: {x: 0, y: 1.6, z: 0}
+  detectionInterval: 0.1
+  rotationSpeed: 540
+  rotateBeforeMoving: 1
+  maxMoveAngle: 60
+  attackDistance: 1.5
+  attackDamage: 20
+  attackDamageWindowStart: 0.2
+  attackDamageWindowEnd: 0.8
+  noiseInvestigationStopDistance: 0.8
+  noiseMemoryDuration: 6
+  drawGizmos: 1
+--- !u!114 &1099870388647652468
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1015107139471776721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7d1447c3f1b64a4f8636f13b520d967, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  groups:
+  - groupName: Idle
+    originalClip: {fileID: 7400000, guid: e425972169e43a440a0d5845e2534b66, type: 2}
+    variants:
+    - {fileID: 7400000, guid: e425972169e43a440a0d5845e2534b66, type: 2}
+    - {fileID: 7400000, guid: d4231878bb6608545b63f49f7f703325, type: 2}
+    - {fileID: 7400000, guid: 388ac325f58a4f64ca7d5b496826eb8d, type: 2}
+  - groupName: Walk
+    originalClip: {fileID: 7400000, guid: c9959680432c0474d97415e125380d55, type: 2}
+    variants:
+    - {fileID: 7400000, guid: c9959680432c0474d97415e125380d55, type: 2}
+    - {fileID: 7400000, guid: 83f0997f16d2e7741a3e991ba04b3ffa, type: 2}
+    - {fileID: 7400000, guid: e5bd14d754459f94388b45438ce3fe93, type: 2}
+    - {fileID: 7400000, guid: e2d203d4e8708fa4f84c1af93db27ac7, type: 2}
+    - {fileID: 7400000, guid: 36ed9f1886411ad4ca9e04a319ced89a, type: 2}
+  - groupName: Attack
+    originalClip: {fileID: 7400000, guid: c0c07a0d18b390148b5fd021d2d03f96, type: 2}
+    variants:
+    - {fileID: 7400000, guid: c0c07a0d18b390148b5fd021d2d03f96, type: 2}
+    - {fileID: 7400000, guid: ebf5cf870ca302f498e1026ad1e0e122, type: 2}
+    - {fileID: 7400000, guid: 944c4a3ba34de684b9d2332b6b6b7f2a, type: 2}
+    - {fileID: 7400000, guid: 3a4e7621bb470d445b5465bc0ca8f497, type: 2}
+  - groupName: Run
+    originalClip: {fileID: 7400000, guid: 745467242f60bb4439acfd8dd90c4642, type: 2}
+    variants:
+    - {fileID: 7400000, guid: 745467242f60bb4439acfd8dd90c4642, type: 2}
+    - {fileID: 7400000, guid: 7e78c0b953034474c9c8507896f4d499, type: 2}
+    - {fileID: 7400000, guid: 6c1f2ed15d5946a44bfded074f78b364, type: 2}
+  randomizeOnEnable: 1
+  rebindAfterRandomize: 1
+--- !u!114 &1099870388647652469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1015107139471776721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc6d4d94fda4f9e47aa180a856d915c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxAnger: 100
+  angerDecayDelay: 3
+  angerDecayPerSecond: 8
+  minEnragedDuration: 6
+  logAngerChanges: 0
 --- !u!137 &1150111936122504187
 SkinnedMeshRenderer:
   m_ObjectHideFlags: 0
@@ -36236,3 +36460,4 @@ SceneRoots:
   - {fileID: 1009006948207378037}
   - {fileID: 1312463935}
   - {fileID: 1638429553}
+  - {fileID: 753307346}

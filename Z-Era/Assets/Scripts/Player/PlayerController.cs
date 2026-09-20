@@ -5,39 +5,62 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     #region 组件
-    [Tooltip("玩家刚体")]
+
     private CharacterController characterController;
-    [Tooltip("玩家相机")]
     private Camera cam;
-    [Tooltip("武器相机")]
     private Camera weaponCam;
-    [Tooltip("武器挂载点")]
     private Transform weaponHolder;
-    [Tooltip("音源")]
     private AudioSource audioSource;
+
     #endregion
 
     #region 角色属性
-    [Tooltip("行走速度")]
+
     public float walkSpeed = 5.0f;
-    [Tooltip("重力")]
     public float gravity = -9.81f;
+
     private float verticalVelocity = 0f;
-    [Tooltip("行走音效")]
+
     public AudioClip walkSound;
+
+    #endregion
+
+    #region 脚步玩法噪声
+
+    [Header("脚步玩法噪声")]
+    [Tooltip("玩家身上的玩法噪声发射器，留空时自动从当前物体获取")]
+    [SerializeField]
+    private NoiseEmitter noiseEmitter;
+
+    [Tooltip("每隔多长时间发出一次脚步玩法噪声")]
+    [SerializeField, Min(0.05f)]
+    private float footstepNoiseInterval = 0.5f;
+
+    [Tooltip("脚步玩法噪声的听觉半径")]
+    [SerializeField, Min(0f)]
+    private float footstepNoiseRadius = 6f;
+
+    [Tooltip("脚步玩法噪声的优先级")]
+    [SerializeField, Min(0f)]
+    private float footstepNoisePriority = 1f;
+
+    [Tooltip("每次脚步增加的怒气值")]
+    [SerializeField, Min(0f)]
+    private float footstepAngerValue = 4f;
+
+    private float nextFootstepNoiseTime;
+
     #endregion
 
     #region 相机参数
-    [Tooltip("鼠标灵敏度")]
+
     public float mouseSensitivity = 2.0f;
-    [Tooltip("上下垂直方向的最大旋转角度")]
     public float maxLookAngle = 80.0f;
-    [Tooltip("记录当前相机的垂直旋转角度")]
+
     private float rotationX = 0.0f;
 
     [Header("后坐力恢复")]
     [SerializeField, Min(0.01f)]
-    [Tooltip("后坐力偏移开始恢复后的平滑时间")]
     private float temporaryRecoilReturnTime = 0.2f;
 
     private float temporaryRecoilPitch;
@@ -45,6 +68,7 @@ public class PlayerController : MonoBehaviour
     private float temporaryRecoilPitchVelocity;
     private float temporaryRecoilYawVelocity;
     private bool isFiring;
+
     #endregion
 
     void Start()
@@ -52,9 +76,16 @@ public class PlayerController : MonoBehaviour
         characterController = GetComponent<CharacterController>();
         cam = GetComponentInChildren<Camera>();
         weaponCam = transform.Find("WeaponCamera")?.GetComponent<Camera>();
+
         Cursor.lockState = CursorLockMode.Locked;
+
         audioSource = GetComponent<AudioSource>();
         audioSource.clip = walkSound;
+
+        if (noiseEmitter == null)
+        {
+            noiseEmitter = GetComponent<NoiseEmitter>();
+        }
     }
 
     void Update()
@@ -63,32 +94,49 @@ public class PlayerController : MonoBehaviour
         PlayerMoveController();
     }
 
-    // 方法：玩家移动
     private void PlayerMoveController()
     {
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
-        bool isMoving = (h != 0 || v != 0);
-        Vector3 moveDirection = (transform.right * h + transform.forward * v).normalized;
-        // 处理重力
+
+        bool hasMoveInput = h != 0f || v != 0f;
+
+        Vector3 moveDirection =
+            (transform.right * h + transform.forward * v).normalized;
+
         if (characterController.isGrounded)
         {
-            verticalVelocity = -2f; // 保持贴地
+            verticalVelocity = -2f;
         }
         else
         {
             verticalVelocity += gravity * Time.deltaTime;
         }
-        // 组合水平和垂直移动
-        Vector3 move = moveDirection * walkSpeed + Vector3.up * verticalVelocity;
+
+        Vector3 move =
+            moveDirection * walkSpeed + Vector3.up * verticalVelocity;
+
+        Vector3 positionBeforeMove = transform.position;
+
         characterController.Move(move * Time.deltaTime);
-        // 行走音效
-        if (isMoving && characterController.isGrounded)
+
+        Vector3 horizontalMovement =
+            transform.position - positionBeforeMove;
+        horizontalMovement.y = 0f;
+
+        bool isActuallyWalking =
+            hasMoveInput &&
+            characterController.isGrounded &&
+            horizontalMovement.sqrMagnitude > 0.000001f;
+
+        if (isActuallyWalking)
         {
             if (!audioSource.isPlaying)
             {
                 audioSource.Play();
             }
+
+            UpdateFootstepNoise();
         }
         else
         {
@@ -96,21 +144,47 @@ public class PlayerController : MonoBehaviour
             {
                 audioSource.Stop();
             }
+
+            nextFootstepNoiseTime = Time.time;
         }
     }
 
-    // 方法：玩家相机视角
+    private void UpdateFootstepNoise()
+    {
+        if (Time.time < nextFootstepNoiseTime)
+        {
+            return;
+        }
+
+        nextFootstepNoiseTime = Time.time + footstepNoiseInterval;
+
+        if (noiseEmitter == null)
+        {
+            return;
+        }
+
+        noiseEmitter.EmitFootstep(
+            transform.position,
+            footstepNoiseRadius,
+            footstepNoisePriority,
+            footstepAngerValue
+        );
+    }
+
     private void PlayerCameraController()
     {
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
-        // 鼠标控制基础视角
         transform.Rotate(Vector3.up * mouseX);
-        rotationX -= mouseY;
-        rotationX = Mathf.Clamp(rotationX, -maxLookAngle, maxLookAngle);
 
-        // 武器正在射击时不恢复，停火或弹匣为空时立即恢复
+        rotationX -= mouseY;
+        rotationX = Mathf.Clamp(
+            rotationX,
+            -maxLookAngle,
+            maxLookAngle
+        );
+
         if (!isFiring)
         {
             temporaryRecoilPitch = Mathf.SmoothDamp(
@@ -128,7 +202,6 @@ public class PlayerController : MonoBehaviour
             );
         }
 
-        // 最终相机角度 = 永久后坐力后的基础角度 + 临时后坐力
         float finalPitch = Mathf.Clamp(
             rotationX - temporaryRecoilPitch,
             -maxLookAngle,
@@ -141,12 +214,10 @@ public class PlayerController : MonoBehaviour
             0f
         );
 
-        // 武器相机完全同步主相机
         weaponCam.transform.position = cam.transform.position;
         weaponCam.transform.rotation = cam.transform.rotation;
     }
 
-    // 方法：添加后坐力（由 CameraRecoil 调用）
     public void AddTemporaryRecoil(
         float pitchAmount,
         float yawAmount,
@@ -154,12 +225,9 @@ public class PlayerController : MonoBehaviour
     {
         temporaryRecoilPitch += pitchAmount;
         temporaryRecoilYaw += yawAmount;
-
-        // 使用当前武器的恢复速度
         temporaryRecoilReturnTime = returnTime;
     }
 
-    // 方法：设置武器是否正在射击（由 CameraRecoil 调用）
     public void SetFiring(bool firing)
     {
         isFiring = firing;
