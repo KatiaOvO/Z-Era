@@ -39,7 +39,7 @@ public class ZombieAI : MonoBehaviour, INoiseListener
 
     [Tooltip("视觉检测间隔")]
     [SerializeField, Min(0.02f)]
-    private float detectionInterval = 0.1f;
+    private float detectionInterval = 0.25f;
 
     [Header("Movement")]
     [Tooltip("僵尸每秒旋转角度")]
@@ -96,6 +96,8 @@ public class ZombieAI : MonoBehaviour, INoiseListener
     private static readonly string AttackStateName = "Attack";
 
     private const float AttackExitPadding = 0.25f;
+    // 多 Zombie 场景下限制视觉检测频率，避免大量 OverlapSphere 集中在同一帧。
+    private const float MinimumDetectionInterval = 0.2f;
 
     private readonly Collider[] detectionBuffer = new Collider[8];
 
@@ -134,6 +136,16 @@ public class ZombieAI : MonoBehaviour, INoiseListener
         }
 
         ResolveLayerMasks();
+        // 旧场景可能仍保存着 0.1 秒的检测间隔，这里强制使用合理下限。
+        detectionInterval = Mathf.Max(
+            detectionInterval,
+            MinimumDetectionInterval
+        );
+
+        // 随机错开每只 Zombie 的第一次检测时间，
+        // 避免大量 Zombie 在同一帧集中执行玩家检测。
+        nextDetectionTime =
+            Time.time + UnityEngine.Random.Range(0f, detectionInterval);
 
         hasWalkParameter = HasAnimatorParameter(
             "walk",

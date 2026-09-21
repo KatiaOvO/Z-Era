@@ -89,7 +89,7 @@ public class WeaponController : MonoBehaviour
     [Tooltip("最大携弹数")]
     private int maxCarriedAmmo;
     [Tooltip("当前携弹数")]
-    private int currentCarriedAmmo;
+    public int currentCarriedAmmo;
     [Tooltip("枪弹匣容量")]
     private int magazineSize;
     [Tooltip("当前弹匣子弹数")]
@@ -237,8 +237,6 @@ public class WeaponController : MonoBehaviour
         AnimatorController();
         ShootingState();
         HandleAmmo();
-        // Debuglog
-        Debug.Log(currentMagazineAmmo + "/" + currentCarriedAmmo);
     }
 
     // 方法：参数判断

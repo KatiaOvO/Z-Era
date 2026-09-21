@@ -6,7 +6,7 @@ using UnityEngine;
 /// 
 /// 职责：
 /// 1. 接收 NoiseEmitter 发出的噪声。
-/// 2. 在噪声半径内查找 Zombie 图层上的 Collider。
+/// 2. 在噪声半径内查找 ZombieHearing 图层上的听觉触发器。
 /// 3. 获取 INoiseListener。
 /// 4. 调用 HearNoise()。
 /// 
@@ -19,11 +19,11 @@ public class NoiseManager : MonoBehaviour
     public static NoiseManager Instance { get; private set; }
 
     [Header("Detection")]
-    [Tooltip("用于查找能够听到噪声的 Zombie 图层")]
+    [Tooltip("用于查找能够听到噪声的 ZombieHearing 图层")]
     [SerializeField]
-    private LayerMask zombieLayer;
+    private LayerMask noiseListenerLayer;
 
-    [Tooltip("一次噪声查询最多接收多少个 Collider")]
+    [Tooltip("一次噪声查询缓冲区的初始容量，结果填满时会自动扩容")]
     [SerializeField, Min(1)]
     private int maxNoiseResults = 32;
 
@@ -33,6 +33,7 @@ public class NoiseManager : MonoBehaviour
     private bool logNoiseEvents;
 
     // 复用查询数组，避免每次发射噪声都产生新的数组分配。
+    // 如果初始容量不足以容纳全部碰撞体，会在查询时自动扩容。
     private Collider[] overlapBuffer;
 
     // 同一个 Zombie 可能有多个碰撞体。
@@ -53,18 +54,19 @@ public class NoiseManager : MonoBehaviour
 
         Instance = this;
 
-        overlapBuffer = new Collider[maxNoiseResults];
+        overlapBuffer = new Collider[Mathf.Max(1, maxNoiseResults)];
 
-        // 没有手动配置时，按名称自动查找 Zombie 图层。
-        if (zombieLayer.value == 0)
+        // 没有手动配置时，按名称自动查找 ZombieHearing 图层。
+        if (noiseListenerLayer.value == 0)
         {
-            zombieLayer = LayerMask.GetMask("Zombie");
+            noiseListenerLayer =
+                LayerMask.GetMask("ZombieHearing");
         }
 
-        if (zombieLayer.value == 0)
+        if (noiseListenerLayer.value == 0)
         {
             Debug.LogWarning(
-                "NoiseManager：没有配置 Zombie 图层。",
+                "NoiseManager：没有配置 ZombieHearing 图层。",
                 this
             );
         }
@@ -90,14 +92,12 @@ public class NoiseManager : MonoBehaviour
             return;
         }
 
-        // 查询噪声范围内所有 Zombie 图层上的 Collider。
-        // QueryTriggerInteraction.Collide 允许命中 Zombie 身体部位触发器。
-        int hitCount = Physics.OverlapSphereNonAlloc(
+        // 只查询 ZombieHearing 图层上的专用听觉触发器。
+        // 这样每只 Zombie 在查询结果中只会占一个 Collider，
+        // 不会再把头部、躯干、四肢等命中碰撞体全部计算一次。
+        int hitCount = QueryNoiseColliders(
             noiseEvent.position,
-            radius,
-            overlapBuffer,
-            zombieLayer,
-            QueryTriggerInteraction.Collide
+            radius
         );
 
         // 每次发射噪声前清空去重集合。
@@ -112,7 +112,7 @@ public class NoiseManager : MonoBehaviour
                 continue;
             }
 
-            // 接口可能挂在 Collider 的父物体上，
+            // 接口挂在听觉触发器的父物体上，
             // 因此必须使用 GetComponentInParent。
             INoiseListener listener =
                 hitCollider.GetComponentInParent<INoiseListener>();
@@ -122,7 +122,8 @@ public class NoiseManager : MonoBehaviour
                 continue;
             }
 
-            // 同一个 Zombie 的多个碰撞体只通知一次。
+            // 听觉触发器通常已经做到每个 Zombie 只有一个，
+            // 这里保留去重逻辑，防止特殊情况下的重复通知。
             if (!listenerBuffer.Add(listener))
             {
                 continue;
@@ -140,6 +141,45 @@ public class NoiseManager : MonoBehaviour
                 this
             );
         }
+    }
+
+    /// <summary>
+    /// 查询噪声范围内的听觉触发器。
+    /// 
+    /// 如果结果数量等于当前缓冲区长度，说明结果可能已经被截断。
+    /// 此时将缓冲区容量翻倍并重新查询，
+    /// 直到本次结果可以完整放入缓冲区为止。
+    /// </summary>
+    private int QueryNoiseColliders(
+        Vector3 position,
+        float radius
+    )
+    {
+        int hitCount = Physics.OverlapSphereNonAlloc(
+            position,
+            radius,
+            overlapBuffer,
+            noiseListenerLayer,
+            QueryTriggerInteraction.Collide
+        );
+
+        // 结果填满缓冲区时继续扩容重查，
+        // 避免大量 Zombie 占满固定容量后只通知前几只 Zombie。
+        while (hitCount == overlapBuffer.Length)
+        {
+            int newBufferSize = overlapBuffer.Length * 2;
+            overlapBuffer = new Collider[newBufferSize];
+
+            hitCount = Physics.OverlapSphereNonAlloc(
+                position,
+                radius,
+                overlapBuffer,
+                noiseListenerLayer,
+                QueryTriggerInteraction.Collide
+            );
+        }
+
+        return hitCount;
     }
 
     private void OnValidate()
