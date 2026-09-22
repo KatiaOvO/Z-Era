@@ -15,6 +15,15 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     [SerializeField, Min(0f)]
     private float damageInvincibilityTime = 0.1f;
 
+    [Header("受伤减速")]
+    [Tooltip("玩家受伤后降低的速度百分比")]
+    [SerializeField, Range(0f, 100f)]
+    private float damageSpeedReductionPercent = 50f;
+
+    [Tooltip("玩家受伤后的减速持续时间（秒）")]
+    [SerializeField, Min(0f)]
+    private float damageSlowDuration = 1f;
+
     #endregion
 
     #region 运行时状态
@@ -27,6 +36,12 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
     // 确保死亡逻辑和 Died 事件只执行一次。
     private bool isDead;
+
+    // 受伤减速状态。
+    private PlayerController playerController;
+    private float originalWalkSpeed;
+    private float speedRestoreTime;
+    private bool isSpeedReduced;
 
     #endregion
 
@@ -71,11 +86,22 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     {
         // 游戏开始时将生命值恢复为最大值。
         currentHealth = maxHealth;
+
+        playerController = GetComponent<PlayerController>();
     }
 
     private void Update()
     {
-        Debug.Log(currentHealth);
+        if (isSpeedReduced &&
+            Time.time >= speedRestoreTime)
+        {
+            RestoreMovementSpeed();
+        }
+    }
+
+    private void OnDisable()
+    {
+        RestoreMovementSpeed();
     }
 
     #endregion
@@ -105,6 +131,8 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         float finalDamage = CalculateFinalDamage(damageInfo);
 
         currentHealth = Mathf.Max(0f, currentHealth - finalDamage);
+
+        ApplyDamageSlow();
 
         // 通知外部生命值已变化。
         HealthChanged?.Invoke(currentHealth, maxHealth);
@@ -151,6 +179,55 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
     #region 内部逻辑
 
+    // 受伤后临时降低移动速度，连续受伤只延长减速结束时间。
+    private void ApplyDamageSlow()
+    {
+        if (playerController == null)
+        {
+            return;
+        }
+
+        if (!isSpeedReduced)
+        {
+            originalWalkSpeed =
+                playerController.walkSpeed;
+        }
+
+        float speedMultiplier =
+            1f - damageSpeedReductionPercent / 100f;
+
+        playerController.walkSpeed =
+            originalWalkSpeed *
+            Mathf.Clamp01(speedMultiplier);
+
+        isSpeedReduced = true;
+
+        if (damageSlowDuration <= 0f)
+        {
+            RestoreMovementSpeed();
+            return;
+        }
+
+        speedRestoreTime =
+            Time.time + damageSlowDuration;
+    }
+
+    private void RestoreMovementSpeed()
+    {
+        if (!isSpeedReduced)
+        {
+            return;
+        }
+
+        if (playerController != null)
+        {
+            playerController.walkSpeed =
+                originalWalkSpeed;
+        }
+
+        isSpeedReduced = false;
+    }
+
     // 统一计算玩家最终受到的伤害。
     // 以后可以在这里加入护甲、伤害倍率和特定来源抗性。
     private float CalculateFinalDamage(DamageInfo damageInfo)
@@ -180,6 +257,14 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         maxHealth = Mathf.Max(1f, maxHealth);
         damageInvincibilityTime =
             Mathf.Max(0f, damageInvincibilityTime);
+        damageSpeedReductionPercent =
+            Mathf.Clamp(
+                damageSpeedReductionPercent,
+                0f,
+                100f
+            );
+        damageSlowDuration =
+            Mathf.Max(0f, damageSlowDuration);
     }
 
     #endregion

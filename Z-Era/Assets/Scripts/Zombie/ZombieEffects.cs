@@ -3,53 +3,142 @@ using UnityEngine;
 
 public class ZombieEffects : MonoBehaviour
 {
-    #region 效果
-    [SerializeField]
-    [Tooltip("溅血粒子预制体")]
-    private ParticleSystem bloodEffectPrefab;
-    [Tooltip("渲染器")]
-    private Renderer rend;
-    [Tooltip("材质")]
-    private Material mat;
-    #endregion
+    [Header("受击特效")]
 
-    #region 参数
+    [Tooltip("子弹命中的溅血粒子预制体")]
     [SerializeField]
-    [Min(0.01f)]
-    [Tooltip("溅血特效存活时间")]
+    private ParticleSystem bloodEffectPrefab;
+
+    [Tooltip("匕首命中的溅血粒子预制体，留空时使用子弹溅血粒子")]
+    [SerializeField]
+    private ParticleSystem knifeHitBloodEffectPrefab;
+
+    [Tooltip("渲染器")]
+    [SerializeField]
+    private Renderer rend;
+
+    [Tooltip("材质")]
+    [SerializeField]
+    private Material mat;
+
+    [Header("参数")]
+
+    [Tooltip("子弹溅血特效存活时间")]
+    [SerializeField, Min(0.01f)]
     private float bloodEffectLifeTime = 0.5f;
+
+    [Tooltip("匕首溅血特效存活时间")]
+    [SerializeField, Min(0.01f)]
+    private float knifeHitBloodEffectLifetime = 0.5f;
+
+    [Tooltip("匕首溅血进入敌人身体内部的距离")]
+    [SerializeField, Min(0f)]
+    private float knifeBloodSurfaceOffset = 0.02f;
+
     [Tooltip("溶解参数名")]
-    private string dissolvePropertyName = "_DissolveAmount";
-    [SerializeField]
+    private string dissolvePropertyName =
+        "_DissolveAmount";
+
     [Tooltip("溶解总时长")]
-    private float dissolveDuration = 4.0f;
+    [SerializeField]
+    private float dissolveDuration = 4f;
+
     [Tooltip("溶解已经过去的时间")]
     private float elapsed = 0.5f;
+
     [Tooltip("是否完全溶解")]
     public bool isFullyDissolved = false;
-    #endregion
 
     private void Start()
     {
-        rend = GetComponentInChildren<Renderer>();
-        mat = rend.material;
+        if (rend == null)
+        {
+            rend = GetComponentInChildren<Renderer>();
+        }
+
+        if (rend != null)
+        {
+            mat = rend.material;
+        }
     }
 
-    // 方法：在子弹命中部位播放溅血粒子系统
-    public void PlayHitEffect(Vector3 hitPoint, Vector3 hitNormal)
+    /// <summary>
+    /// 子弹命中时播放溅血效果。
+    /// </summary>
+    public void PlayHitEffect(
+        Vector3 hitPoint,
+        Vector3 hitNormal
+    )
     {
         if (bloodEffectPrefab == null)
         {
             return;
         }
 
-        Vector3 effectDirection = hitNormal.sqrMagnitude > 0f
-            ? hitNormal
-            : Vector3.up;
+        Vector3 effectDirection =
+            hitNormal.sqrMagnitude > 0.0001f
+                ? hitNormal.normalized
+                : Vector3.up;
 
-        ParticleSystem effect = Instantiate(
+        PlayBloodEffect(
             bloodEffectPrefab,
             hitPoint,
+            effectDirection,
+            bloodEffectLifeTime
+        );
+    }
+
+    /// <summary>
+    /// 匕首命中时播放溅血效果。
+    /// attackDirection 应该是从玩家指向敌人命中点的方向。
+    /// </summary>
+    public void PlayKnifeHitEffect(
+        Vector3 hitPoint,
+        Vector3 attackDirection
+    )
+    {
+        ParticleSystem effectPrefab =
+            knifeHitBloodEffectPrefab != null
+                ? knifeHitBloodEffectPrefab
+                : bloodEffectPrefab;
+
+        if (effectPrefab == null)
+        {
+            return;
+        }
+
+        Vector3 direction =
+            attackDirection.sqrMagnitude > 0.0001f
+                ? attackDirection.normalized
+                : Vector3.forward;
+
+        // 向敌人内部偏移，避免粒子生成在模型表面外侧。
+        Vector3 spawnPoint =
+            hitPoint +
+            direction *
+            Mathf.Max(0f, knifeBloodSurfaceOffset);
+
+        // 血液朝攻击方向的反方向喷出，也就是朝玩家一侧喷出。
+        Vector3 effectDirection = -direction;
+
+        PlayBloodEffect(
+            effectPrefab,
+            spawnPoint,
+            effectDirection,
+            knifeHitBloodEffectLifetime
+        );
+    }
+
+    private void PlayBloodEffect(
+        ParticleSystem effectPrefab,
+        Vector3 spawnPoint,
+        Vector3 effectDirection,
+        float lifeTime
+    )
+    {
+        ParticleSystem effect = Instantiate(
+            effectPrefab,
+            spawnPoint,
             Quaternion.LookRotation(effectDirection)
         );
 
@@ -58,20 +147,42 @@ public class ZombieEffects : MonoBehaviour
             effect.Play();
         }
 
-        Destroy(effect.gameObject, bloodEffectLifeTime);
+        Destroy(
+            effect.gameObject,
+            Mathf.Max(0.01f, lifeTime)
+        );
     }
 
-    // 方法：zombie死亡后溶解
+    /// <summary>
+    /// Zombie 死亡后开始溶解。
+    /// </summary>
     public void ZombieDissolve()
     {
-        elapsed += Time.deltaTime;
-        // 归一化到0.5~1，因为溶解效果的前0.5还没开始溶解，故直接跳过，从0.5开始溶解
-        float t = Mathf.Clamp01(elapsed / dissolveDuration);
-        float dissolveValue = Mathf.Lerp(0.5f, 1.0f, t);
-        mat.SetFloat(dissolvePropertyName, dissolveValue);
-        if(dissolveValue >= 1.0f)
+        if (mat == null)
         {
-            dissolveValue = 1.0f;
+            return;
+        }
+
+        elapsed += Time.deltaTime;
+
+        float t = Mathf.Clamp01(
+            elapsed / Mathf.Max(
+                0.01f,
+                dissolveDuration
+            )
+        );
+
+        float dissolveValue =
+            Mathf.Lerp(0.5f, 1f, t);
+
+        mat.SetFloat(
+            dissolvePropertyName,
+            dissolveValue
+        );
+
+        if (dissolveValue >= 1f)
+        {
+            dissolveValue = 1f;
             isFullyDissolved = true;
         }
     }

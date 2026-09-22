@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// 枪支类型枚举
 public enum GunType
 {
     Glock,
@@ -16,96 +15,157 @@ public enum GunType
     MP5
 }
 
-// 开火类型枚举
 public enum FireMode
 {
-    SemiAuto,   // 半自动
-    FullAuto    // 全自动
+    SemiAuto,
+    FullAuto
 }
 
 [System.Serializable]
-// 枪支数据类
 public class GunData
 {
     public GunType gunType;
     public FireMode fireMode;
-    public int magezineSize;    // 弹匣容量
-    public int maxCarriedAmmo;  // 最大携弹数
-    public float singleFireRate;    // 单点射击间隔
-    public float fullAutoFireRate;  //持续射击间隔
-    public int damage;  // 伤害
-    public float range; // 射程
+    public int magezineSize;
+    public int maxCarriedAmmo;
+    public float singleFireRate;
+    public float fullAutoFireRate;
+    public int damage;
+    public float range;
+
     [Tooltip("每发增加的散布角度")]
     public float spreadPerShot = 0.2f;
+
     [Tooltip("最大散布角度")]
     public float maxSpread = 3f;
+
     [Tooltip("每秒恢复的散布角度")]
     public float spreadRecovery = 4f;
+
     [Tooltip("超过这个时间未射击，散布恢复为0")]
-    public float spreadResetTime = 0.25f;
+    public float spreadResetTime = 0.2f;
 
     [Header("后坐力")]
-    [Tooltip("每发向上抬升的角度")]
     public float recoilPitch = 0.5f;
-    [Tooltip("每发水平随机偏移的最大角度")]
     public float recoilYaw = 0.12f;
-    [Tooltip("后坐力恢复的平滑时间，越小恢复越快")]
     public float recoilReturnTime = 0.2f;
 }
 
 public class WeaponController : MonoBehaviour
 {
     #region 组件
-    [Tooltip("武器动画器")]
+
     private Animator animator;
-    [Tooltip("记录上一次的动画状态，用于只触发一次音效")]
     private int previousAnimatorStateHash;
+    private PlayerStamina playerStamina;
+
     #endregion
 
     #region 判断参数
-    [Tooltip("行走判断参数")]
+
     private bool isWalk;
-    [Tooltip("单点开火判断参数")]
     private bool isSingleFire;
-    [Tooltip("自动开火判断参数")]
     private bool isAutoFire;
-    [Tooltip("单点开火限制参数")]
     private bool singleFireTrigger;
-    [Tooltip("自动开火限制参数")]
     private bool autoFireTrigger;
-    [Tooltip("检视判断参数")]
     private bool isInspect;
-    [Tooltip("匕首攻击判断参数")]
     private bool isKnifeAttack;
-    [Tooltip("是否能换弹判断参数")]
+    private bool isKnifeAttackActive;
+    private bool hasEnteredKnifeAttackState;
     private bool canReload;
-    [Tooltip("换弹判断参数")]
     private bool isReload;
-    [Tooltip("弹匣是否完全打空判断参数")]
     private bool isMagazineEmpty;
+
+    #endregion
+
+    #region 匕首候选目标
+
+    private struct KnifeTargetCandidate
+    {
+        public IDamageable Damageable;
+        public Collider Collider;
+        public Vector3 HitPoint;
+        public Vector3 Direction;
+        public float Distance;
+        public float RayDeviationSquared;
+    }
+
+    private readonly Dictionary<
+        IDamageable,
+        KnifeTargetCandidate
+    > knifeTargetCandidates =
+        new Dictionary<
+            IDamageable,
+            KnifeTargetCandidate
+        >();
+
+    #endregion
+
+    #region 匕首攻击参数
+
+    [Header("匕首攻击")]
+
+    [Tooltip("匕首基础伤害")]
+    [SerializeField, Min(0f)]
+    private float knifeDamage = 50f;
+
+    [Tooltip("匕首攻击距离")]
+    [SerializeField, Min(0.1f)]
+    private float knifeAttackRange = 1.5f;
+
+    [Tooltip("匕首攻击扇形角度")]
+    [SerializeField, Range(0f, 360f)]
+    private float knifeAttackAngle = 60f;
+
+    [Tooltip("匕首检测起点，留空时使用 WeaponCamera")]
+    [SerializeField]
+    private Transform knifeAttackOrigin;
+
+    [Tooltip("可被匕首命中的层级，留空时使用 Zombie")]
+    [SerializeField]
+    private LayerMask zombieLayerMask;
+
+    [Tooltip("用于遮挡检测的墙体层级，留空时自动配置")]
+    [SerializeField]
+    private LayerMask knifeObstacleMask;
+
+    [Header("匕首伤害窗口")]
+
+    [Tooltip("伤害窗口开始时的动画归一化时间")]
+    [SerializeField, Range(0f, 1f)]
+    private float knifeDamageWindowStart = 0.35f;
+
+    [Tooltip("伤害窗口结束时的动画归一化时间")]
+    [SerializeField, Range(0f, 1f)]
+    private float knifeDamageWindowEnd = 0.55f;
+
+    [Tooltip("范围内碰撞体检测缓冲区初始大小")]
+    [SerializeField, Min(1)]
+    private int knifeHitBufferSize = 64;
+
+    private Collider[] knifeHitBuffer;
+
+    private bool hasAppliedKnifeDamageThisAttack;
+    private Transform playerRoot;
+
     #endregion
 
     #region 射击
-    [Tooltip("最大携弹数")]
+
     private int maxCarriedAmmo;
-    [Tooltip("当前携弹数")]
     public int currentCarriedAmmo;
-    [Tooltip("枪弹匣容量")]
     private int magazineSize;
-    [Tooltip("当前弹匣子弹数")]
     public int currentMagazineAmmo;
-    [Tooltip("当前枪支类型")]
     private GunType currentGunType;
-    [Tooltip("当前射击模式")]
     private FireMode currentFireMode;
-    [Tooltip("射击计时器")]
     private float lastFireTime;
+
     #endregion
 
-    #region 定义10把枪的属性数组
+    #region 武器数据
+
     public GunData[] gunDatas = new GunData[9]
     {
-        // Glock 20发，半自动
         new GunData
         {
             gunType = GunType.Glock,
@@ -113,11 +173,10 @@ public class WeaponController : MonoBehaviour
             magezineSize = 20,
             maxCarriedAmmo = 240,
             singleFireRate = 0.1f,
-            fullAutoFireRate = 0.0f,
+            fullAutoFireRate = 0f,
             damage = 15,
             range = 50f
         },
-        // Desert Eagle 7发，半自动
         new GunData
         {
             gunType = GunType.DesertEagle,
@@ -125,11 +184,10 @@ public class WeaponController : MonoBehaviour
             magezineSize = 7,
             maxCarriedAmmo = 70,
             singleFireRate = 0.5f,
-            fullAutoFireRate = 0.0f,
+            fullAutoFireRate = 0f,
             damage = 40,
             range = 70f
         },
-        // Tec9 18发，半自动
         new GunData
         {
             gunType = GunType.Tec9,
@@ -137,47 +195,43 @@ public class WeaponController : MonoBehaviour
             magezineSize = 18,
             maxCarriedAmmo = 180,
             singleFireRate = 0.2f,
-            fullAutoFireRate = 0.0f,
+            fullAutoFireRate = 0f,
             damage = 20,
             range = 50f
         },
-        // AK47 30发，全自动
         new GunData
         {
             gunType = GunType.AK47,
             fireMode = FireMode.FullAuto,
             magezineSize = 30,
-            maxCarriedAmmo = 180,
+            maxCarriedAmmo = 240,
             singleFireRate = 0.3f,
             fullAutoFireRate = 0.2f,
             damage = 25,
             range = 60f
         },
-        // M4A4 30发，全自动
         new GunData
         {
             gunType = GunType.M4A4,
             fireMode = FireMode.FullAuto,
             magezineSize = 30,
             maxCarriedAmmo = 240,
-            singleFireRate = 0.3f,
+            singleFireRate = 0.2f,
             fullAutoFireRate = 0.15f,
             damage = 20,
             range = 65f
         },
-        // Vector 20发，全自动
         new GunData
         {
             gunType = GunType.Vector,
             fireMode = FireMode.FullAuto,
-            magezineSize = 20,
-            maxCarriedAmmo = 240,
+            magezineSize = 25,
+            maxCarriedAmmo = 250,
             singleFireRate = 0.05f,
             fullAutoFireRate = 0.05f,
             damage = 15,
             range = 35f
         },
-        // Uzi 25发，全自动
         new GunData
         {
             gunType = GunType.Uzi,
@@ -185,22 +239,21 @@ public class WeaponController : MonoBehaviour
             magezineSize = 25,
             maxCarriedAmmo = 300,
             singleFireRate = 0.12f,
+            fullAutoFireRate = 0.12f,
             damage = 18,
             range = 45f
         },
-        // P90 50发，全自动
         new GunData
         {
             gunType = GunType.P90,
             fireMode = FireMode.FullAuto,
             magezineSize = 50,
-            maxCarriedAmmo = 400,
+            maxCarriedAmmo = 300,
             singleFireRate = 0.1f,
             fullAutoFireRate = 0.1f,
             damage = 20,
             range = 50f
         },
-        // MP5 30发，全自动
         new GunData
         {
             gunType = GunType.MP5,
@@ -213,25 +266,48 @@ public class WeaponController : MonoBehaviour
             range = 50f
         }
     };
+
     #endregion
 
     #region 引用
+
     private WeaponEffects weaponEffects;
-    public GunData CurrentGunData => gunDatas[(int)currentGunType];
+
+    public GunData CurrentGunData =>
+        gunDatas[(int)currentGunType];
+
     #endregion
 
     private void Awake()
     {
-        WeaponInitialization();    // 避免每次切枪都初始化将当前武器充满子弹，故在Awake()中调用
+        WeaponInitialization();
     }
 
-    void Start()
+    private void Start()
     {
         animator = GetComponent<Animator>();
         weaponEffects = GetComponent<WeaponEffects>();
+
+        playerStamina =
+            GetComponentInParent<PlayerStamina>();
+
+        if (playerStamina == null)
+        {
+            Debug.LogError(
+                "PlayerStamina component not found in parent objects!",
+                this
+            );
+        }
+
+        ResolveKnifeAttackSettings();
     }
 
-    void Update()
+    private void OnDisable()
+    {
+        EndKnifeAttackTracking(true);
+    }
+
+    private void Update()
     {
         ParameterJudgment();
         AnimatorController();
@@ -239,216 +315,881 @@ public class WeaponController : MonoBehaviour
         HandleAmmo();
     }
 
-    // 方法：参数判断
-    private void ParameterJudgment()
+    private void ResolveKnifeAttackSettings()
     {
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
-        // 判断isWalking：按下移动键则为正在行走
-        isWalk = h != 0 || v != 0;
-        // 判断isSingleFire：按下鼠标左键则为单点开火
-        isSingleFire = Input.GetKeyDown(KeyCode.Mouse0);
-        // 判断isAutoFire：持续按下鼠标左键则为自动开火
-        isAutoFire= Input.GetKey(KeyCode.Mouse0);
-        // 判断isReload：按下R键则为换弹
-        isReload = Input.GetKeyDown(KeyCode.R);
-        // 判断isInspecting：按下V键则为检视武器
-        isInspect = Input.GetKeyDown(KeyCode.V);
-        // 判断isKnifeAttack：按下F键则为匕首攻击
-        isKnifeAttack = Input.GetKeyDown(KeyCode.F);
-    }
-
-    // 方法：武器动画控制器
-    private void AnimatorController()
-    {
-        // 获取当前武器在枚举中的索引
-        int currentWeaponIndex = (int)currentGunType;
-        // 获取当前武器对应的动画器图层
-        int currentAnimatorLayer = currentWeaponIndex + 1;
-        // 获取武器总数确定循环轮数
-        int weaponNum = gunDatas.Length;
-        // 循环：将动画器中的对应的武器图层的权重设置为1
-        // 遍历武器索引等于当前武器索引时，当前的遍历索引+1的动画器图层权重设置为1，其余设置为0
-        // 由于需要保留Base Layer，故Base Layer的图层索引为0，其余武器图层的索引需+1
-        for(int traverseWeaponIdex = 0; traverseWeaponIdex < weaponNum; traverseWeaponIdex ++)
+        if (zombieLayerMask.value == 0)
         {
-            if(traverseWeaponIdex == currentWeaponIndex)
+            zombieLayerMask =
+                LayerMask.GetMask("Zombie");
+        }
+
+        if (knifeObstacleMask.value == 0)
+        {
+            int excludedLayers =
+                LayerMask.GetMask(
+                    "Zombie",
+                    "Player",
+                    "Weapon",
+                    "ZombieHearing"
+                );
+
+            knifeObstacleMask =
+                Physics.DefaultRaycastLayers &
+                ~excludedLayers;
+        }
+
+        if (knifeAttackOrigin == null &&
+            weaponEffects != null &&
+            weaponEffects.weaponCamera != null)
+        {
+            knifeAttackOrigin =
+                weaponEffects.weaponCamera.transform;
+        }
+
+        if (knifeAttackOrigin == null)
+        {
+            Camera rootCamera =
+                transform.root
+                    .GetComponentInChildren<Camera>();
+
+            if (rootCamera != null)
             {
-                animator.SetLayerWeight(traverseWeaponIdex + 1, 1);
-            }
-            else
-            {
-                animator.SetLayerWeight(traverseWeaponIdex + 1, 0);
+                knifeAttackOrigin =
+                    rootCamera.transform;
             }
         }
-        // 获取当前武器图层的动画状态
-        AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(currentAnimatorLayer);
-        AnimatorStateInfo nextState = animator.GetNextAnimatorStateInfo(currentAnimatorLayer);
 
-        // 如果正在过渡到 TakeOutWeapon / HolsterWeapon，提前获取目标状态
-        AnimatorStateInfo actionState = currentState;
-        if (animator.IsInTransition(currentAnimatorLayer))
+        if (knifeHitBuffer == null ||
+            knifeHitBuffer.Length !=
+            Mathf.Max(1, knifeHitBufferSize))
         {
-            if (nextState.IsName("TakeOutWeapon") || nextState.IsName("HolsterWeapon"))
+            knifeHitBuffer =
+                new Collider[
+                    Mathf.Max(
+                        1,
+                        knifeHitBufferSize
+                    )
+                ];
+        }
+
+        playerRoot = playerStamina != null
+            ? playerStamina.transform
+            : transform.root;
+    }
+
+    private void ParameterJudgment()
+    {
+        float h =
+            Input.GetAxisRaw("Horizontal");
+
+        float v =
+            Input.GetAxisRaw("Vertical");
+
+        isWalk = h != 0f || v != 0f;
+
+        isSingleFire =
+            Input.GetKeyDown(KeyCode.Mouse0);
+
+        isAutoFire =
+            Input.GetKey(KeyCode.Mouse0);
+
+        isReload =
+            Input.GetKeyDown(KeyCode.R);
+
+        isInspect =
+            Input.GetKeyDown(KeyCode.V);
+
+        isKnifeAttack =
+            Input.GetKeyDown(KeyCode.F);
+    }
+
+    private void AnimatorController()
+    {
+        int currentWeaponIndex =
+            (int)currentGunType;
+
+        int currentAnimatorLayer =
+            currentWeaponIndex + 1;
+
+        for (int i = 0; i < gunDatas.Length; i++)
+        {
+            animator.SetLayerWeight(
+                i + 1,
+                i == currentWeaponIndex ? 1f : 0f
+            );
+        }
+
+        AnimatorStateInfo currentState =
+            animator.GetCurrentAnimatorStateInfo(
+                currentAnimatorLayer
+            );
+
+        AnimatorStateInfo nextState =
+            animator.GetNextAnimatorStateInfo(
+                currentAnimatorLayer
+            );
+
+        UpdateKnifeAttackState(currentState);
+
+        AnimatorStateInfo actionState =
+            currentState;
+
+        if (animator.IsInTransition(
+            currentAnimatorLayer))
+        {
+            if (nextState.IsName("TakeOutWeapon") ||
+                nextState.IsName("HolsterWeapon"))
             {
                 actionState = nextState;
             }
         }
 
-        // 只在状态切换的那一帧播放音效
-        if (actionState.fullPathHash != previousAnimatorStateHash)
+        if (actionState.fullPathHash !=
+            previousAnimatorStateHash)
         {
             if (actionState.IsName("TakeOutWeapon"))
             {
-                // 只要状态名是 TakeOutWeapon，就是取出动作
-                // 无论里面是 TakeOutWeapon 正向片段，还是 HolsterWeapon 的倒放片段
-                weaponEffects.PlayWeaponActionSound("takeout");
+                weaponEffects
+                    .PlayWeaponActionSound(
+                        "takeout"
+                    );
             }
-            else if (actionState.IsName("HolsterWeapon"))
+            else if (
+                actionState.IsName("HolsterWeapon"))
             {
-                // 只要状态名是 HolsterWeapon，就是收起动作
-                weaponEffects.PlayWeaponActionSound("holster");
+                weaponEffects
+                    .PlayWeaponActionSound(
+                        "holster"
+                    );
             }
 
-            previousAnimatorStateHash = actionState.fullPathHash;
+            previousAnimatorStateHash =
+                actionState.fullPathHash;
         }
 
-        // 播放指定动画时，只有播放完当前动画之后才能播放其他动画，包括：匕首攻击、两种换弹、取出武器
         if (currentState.IsName("KnifeAttack") ||
             currentState.IsName("ReloadOutOfAmmo") ||
             currentState.IsName("ReloadLeftAmmo") ||
             currentState.IsName("TakeOutWeapon") ||
             currentState.IsName("HolsterWeapon"))
         {
+            // 当前动画正在播放，清除此帧被忽略的输入。
             singleFireTrigger = false;
             autoFireTrigger = false;
+            isSingleFire = false;
+            isAutoFire = false;
+            isReload = false;
+            isInspect = false;
+            isKnifeAttack = false;
             return;
         }
 
         animator.SetBool("walk", isWalk);
-        if (isInspect) animator.Play("Inspect", currentAnimatorLayer);
-        if (isKnifeAttack) animator.Play("KnifeAttack", currentAnimatorLayer);
-        if(singleFireTrigger)
+
+        if (isInspect)
         {
-            animator.Play("Fire", currentAnimatorLayer);
-            weaponEffects.ShootEffects();   // 调用weaponEffects.cs中的ShootEffects()方法，射击时产生特效
-            currentMagazineAmmo--;  // 当前弹匣子弹数-1
+            animator.Play(
+                "Inspect",
+                currentAnimatorLayer
+            );
+        }
+
+        if (isKnifeAttack)
+        {
+            TryStartKnifeAttack(
+                currentAnimatorLayer
+            );
+        }
+
+        if (singleFireTrigger)
+        {
+            animator.Play(
+                "Fire",
+                currentAnimatorLayer
+            );
+
+            weaponEffects.ShootEffects();
+            currentMagazineAmmo--;
             singleFireTrigger = false;
         }
-        else if(autoFireTrigger)
+        else if (autoFireTrigger)
         {
-            animator.Play("Fire", currentAnimatorLayer);
-            weaponEffects.ShootEffects();   // 调用weaponEffects.cs中的ShootEffects()方法，射击时产生特效
-            currentMagazineAmmo--;  // 当前弹匣子弹数-1
+            animator.Play(
+                "Fire",
+                currentAnimatorLayer
+            );
+
+            weaponEffects.ShootEffects();
+            currentMagazineAmmo--;
             autoFireTrigger = false;
         }
-        if(canReload && isReload && currentMagazineAmmo == 0)
+
+        if (canReload &&
+            isReload &&
+            currentMagazineAmmo == 0)
         {
-            animator.Play("ReloadOutOfAmmo", currentAnimatorLayer);   
-            weaponEffects.ReloadEffects();  // 调用weaponEffects.cs中的ReloadEffects()方法，换弹时产生特效
+            animator.Play(
+                "ReloadOutOfAmmo",
+                currentAnimatorLayer
+            );
+
+            weaponEffects.ReloadEffects();
         }
-        else if(canReload && isReload && currentMagazineAmmo > 0)
+        else if (
+            canReload &&
+            isReload &&
+            currentMagazineAmmo > 0)
         {
-            animator.Play("ReloadLeftAmmo", currentAnimatorLayer);
-            weaponEffects.ReloadEffects();  // 调用weaponEffects.cs中的ReloadEffects()方法，换弹时产生特效
+            animator.Play(
+                "ReloadLeftAmmo",
+                currentAnimatorLayer
+            );
+
+            weaponEffects.ReloadEffects();
         }
     }
 
-    // 方法：枪支初始化
+    private void TryStartKnifeAttack(
+        int animatorLayer
+    )
+    {
+        if (isKnifeAttackActive)
+        {
+            return;
+        }
+
+        if (playerStamina == null)
+        {
+            Debug.LogError(
+                "Cannot start knife attack: " +
+                "PlayerStamina is missing!",
+                this
+            );
+
+            return;
+        }
+
+        if (!playerStamina
+            .TryConsumeKnifeAttackStamina())
+        {
+            return;
+        }
+
+        isKnifeAttackActive = true;
+        hasEnteredKnifeAttackState = false;
+        hasAppliedKnifeDamageThisAttack = false;
+        knifeTargetCandidates.Clear();
+
+        animator.Play(
+            "KnifeAttack",
+            animatorLayer
+        );
+    }
+
+    private void UpdateKnifeAttackState(
+        AnimatorStateInfo currentState
+    )
+    {
+        if (!isKnifeAttackActive)
+        {
+            return;
+        }
+
+        if (currentState.IsName("KnifeAttack"))
+        {
+            hasEnteredKnifeAttackState = true;
+
+            float normalizedTime =
+                currentState.normalizedTime;
+
+            if (!hasAppliedKnifeDamageThisAttack &&
+                normalizedTime >=
+                    knifeDamageWindowStart &&
+                normalizedTime <=
+                    knifeDamageWindowEnd)
+            {
+                hasAppliedKnifeDamageThisAttack =
+                    true;
+
+                ApplyKnifeAttackDamage();
+            }
+
+            return;
+        }
+
+        if (hasEnteredKnifeAttackState)
+        {
+            EndKnifeAttackTracking(false);
+        }
+    }
+
+    private void ApplyKnifeAttackDamage()
+    {
+        knifeTargetCandidates.Clear();
+
+        if (knifeAttackOrigin == null)
+        {
+            Debug.LogError(
+                "Cannot apply knife damage: " +
+                "knifeAttackOrigin is missing!",
+                this
+            );
+
+            return;
+        }
+
+        if (knifeHitBuffer == null)
+        {
+            ResolveKnifeAttackSettings();
+        }
+
+        Vector3 origin =
+            knifeAttackOrigin.position;
+
+        Vector3 forward =
+            knifeAttackOrigin.forward;
+
+        if (forward.sqrMagnitude < 0.0001f)
+        {
+            return;
+        }
+
+        forward.Normalize();
+
+        Ray aimRay =
+            new Ray(origin, forward);
+
+        int hitCount =
+            QueryKnifeHitColliders(origin);
+
+        float halfAngle =
+            Mathf.Clamp(
+                knifeAttackAngle,
+                0f,
+                360f
+            ) * 0.5f;
+
+        float minimumDot =
+            Mathf.Cos(
+                halfAngle * Mathf.Deg2Rad
+            );
+
+        // 第一遍：为每个 Zombie 选择最接近准星射线的身体 Collider。
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider targetCollider =
+                knifeHitBuffer[i];
+
+            if (targetCollider == null)
+            {
+                continue;
+            }
+
+            float rayDeviationSquared;
+
+            Vector3 targetPoint =
+                GetKnifeCandidateHitPoint(
+                    targetCollider,
+                    aimRay,
+                    origin,
+                    knifeAttackRange,
+                    out rayDeviationSquared
+                );
+
+            Vector3 delta =
+                targetPoint - origin;
+
+            float distance =
+                delta.magnitude;
+
+            if (distance > knifeAttackRange)
+            {
+                continue;
+            }
+
+            Vector3 direction =
+                distance > 0.0001f
+                    ? delta / distance
+                    : forward;
+
+            if (Vector3.Dot(
+                forward,
+                direction
+            ) < minimumDot)
+            {
+                continue;
+            }
+
+            IDamageable damageable =
+                targetCollider
+                    .GetComponentInParent<
+                        IDamageable
+                    >();
+
+            if (damageable == null)
+            {
+                continue;
+            }
+
+            ZombieController zombie =
+                damageable as ZombieController;
+
+            if (zombie != null &&
+                !zombie.CanTakeDamage)
+            {
+                continue;
+            }
+
+            if (IsKnifePathBlocked(
+                origin,
+                targetPoint,
+                distance
+            ))
+            {
+                continue;
+            }
+
+            KnifeTargetCandidate candidate =
+                new KnifeTargetCandidate
+                {
+                    Damageable = damageable,
+                    Collider = targetCollider,
+                    HitPoint = targetPoint,
+                    Direction = direction,
+                    Distance = distance,
+                    RayDeviationSquared =
+                        rayDeviationSquared
+                };
+
+            if (!knifeTargetCandidates.TryGetValue(
+                damageable,
+                out KnifeTargetCandidate currentBest
+                ))
+            {
+                knifeTargetCandidates.Add(
+                    damageable,
+                    candidate
+                );
+
+                continue;
+            }
+
+            if (IsBetterKnifeCandidate(
+                candidate,
+                currentBest
+                ))
+            {
+                knifeTargetCandidates[
+                    damageable
+                ] = candidate;
+            }
+        }
+
+        // 第二遍：每个 Zombie 只使用最佳 Collider 造成一次伤害。
+        foreach (
+            KnifeTargetCandidate candidate in
+            knifeTargetCandidates.Values
+        )
+        {
+            HitPartMarker hitPartMarker =
+                candidate.Collider
+                    .GetComponentInParent<
+                        HitPartMarker
+                    >();
+
+            HitPart hitPart =
+                hitPartMarker != null
+                    ? hitPartMarker.Part
+                    : HitPart.Body;
+
+            DamageInfo damageInfo =
+                new DamageInfo
+                {
+                    damage = knifeDamage,
+                    hitPart = hitPart,
+                    hitPoint = candidate.HitPoint,
+                    souece =
+                        DamageSource.KnifeAttack,
+                    attacker =
+                        playerRoot != null
+                            ? playerRoot.gameObject
+                            : gameObject
+                };
+
+            candidate.Damageable.TakeDamage(
+                damageInfo
+            );
+
+            ZombieEffects hitEffects =
+                candidate.Collider
+                    .GetComponentInParent<
+                        ZombieEffects
+                    >();
+
+            if (hitEffects != null)
+            {
+                hitEffects.PlayKnifeHitEffect(
+                    damageInfo.hitPoint,
+                    candidate.Direction
+                );
+            }
+        }
+
+        knifeTargetCandidates.Clear();
+    }
+
+    private Vector3 GetKnifeCandidateHitPoint(
+        Collider targetCollider,
+        Ray aimRay,
+        Vector3 origin,
+        float maxRange,
+        out float rayDeviationSquared
+    )
+    {
+        // 如果中心射线直接命中该 Collider，
+        // 使用真实表面交点，并给予最高优先级。
+        if (targetCollider.Raycast(
+            aimRay,
+            out RaycastHit rayHit,
+            maxRange
+        ))
+        {
+            rayDeviationSquared = 0f;
+            return rayHit.point;
+        }
+
+        // 没有直接命中时，寻找 Collider 上
+        // 距离摄像机中心射线最近的点。
+        Vector3 colliderCenter =
+            targetCollider.bounds.center;
+
+        float axialDistance =
+            Vector3.Dot(
+                colliderCenter - origin,
+                aimRay.direction
+            );
+
+        axialDistance = Mathf.Clamp(
+            axialDistance,
+            0f,
+            maxRange
+        );
+
+        Vector3 closestRayPoint =
+            aimRay.GetPoint(axialDistance);
+
+        Vector3 closestColliderPoint =
+            targetCollider.ClosestPoint(
+                closestRayPoint
+            );
+
+        if ((closestColliderPoint -
+             closestRayPoint).sqrMagnitude <
+            0.000001f)
+        {
+            closestColliderPoint =
+                targetCollider.ClosestPoint(origin);
+        }
+
+        if ((closestColliderPoint - origin)
+                .sqrMagnitude <
+            0.000001f)
+        {
+            closestColliderPoint =
+                targetCollider.bounds.center;
+        }
+
+        if ((closestColliderPoint - origin)
+                .sqrMagnitude <
+            0.000001f)
+        {
+            closestColliderPoint =
+                targetCollider.transform.position;
+        }
+
+        rayDeviationSquared =
+            (closestColliderPoint -
+             closestRayPoint).sqrMagnitude;
+
+        return closestColliderPoint;
+    }
+
+    private bool IsBetterKnifeCandidate(
+        KnifeTargetCandidate candidate,
+        KnifeTargetCandidate currentBest
+    )
+    {
+        const float comparisonTolerance =
+            0.0001f;
+
+        if (candidate.RayDeviationSquared <
+            currentBest.RayDeviationSquared -
+            comparisonTolerance)
+        {
+            return true;
+        }
+
+        if (Mathf.Abs(
+            candidate.RayDeviationSquared -
+            currentBest.RayDeviationSquared
+        ) <= comparisonTolerance)
+        {
+            return candidate.Distance <
+                currentBest.Distance;
+        }
+
+        return false;
+    }
+
+    private int QueryKnifeHitColliders(
+        Vector3 origin
+    )
+    {
+        if (knifeHitBuffer == null ||
+            knifeHitBuffer.Length == 0)
+        {
+            knifeHitBuffer =
+                new Collider[
+                    Mathf.Max(
+                        1,
+                        knifeHitBufferSize
+                    )
+                ];
+        }
+
+        while (true)
+        {
+            int hitCount =
+                Physics.OverlapSphereNonAlloc(
+                    origin,
+                    Mathf.Max(
+                        0.1f,
+                        knifeAttackRange
+                    ),
+                    knifeHitBuffer,
+                    zombieLayerMask,
+                    QueryTriggerInteraction.Ignore
+                );
+
+            if (hitCount <
+                knifeHitBuffer.Length)
+            {
+                return hitCount;
+            }
+
+            System.Array.Resize(
+                ref knifeHitBuffer,
+                knifeHitBuffer.Length * 2
+            );
+        }
+    }
+
+    private bool IsKnifePathBlocked(
+        Vector3 origin,
+        Vector3 targetPoint,
+        float targetDistance
+    )
+    {
+        if (knifeObstacleMask.value == 0 ||
+            targetDistance <= 0.02f)
+        {
+            return false;
+        }
+
+        Vector3 direction =
+            (targetPoint - origin).normalized;
+
+        float castDistance =
+            Mathf.Max(
+                0f,
+                targetDistance - 0.02f
+            );
+
+        return Physics.Raycast(
+            origin,
+            direction,
+            out RaycastHit hit,
+            castDistance,
+            knifeObstacleMask,
+            QueryTriggerInteraction.Ignore
+        ) && hit.distance < targetDistance;
+    }
+
+    private void EndKnifeAttackTracking(
+        bool weaponWasDisabled
+    )
+    {
+        knifeTargetCandidates.Clear();
+
+        if (!isKnifeAttackActive)
+        {
+            return;
+        }
+
+        isKnifeAttackActive = false;
+        hasEnteredKnifeAttackState = false;
+        hasAppliedKnifeDamageThisAttack = false;
+
+        if (playerStamina == null)
+        {
+            return;
+        }
+
+        if (weaponWasDisabled)
+        {
+            playerStamina
+                .CancelKnifeAttackRecoveryPause();
+        }
+        else
+        {
+            playerStamina
+                .NotifyKnifeAttackEnded();
+        }
+    }
+
     private void WeaponInitialization()
     {
-        // 获取当前枪支类型
-        // 获取当前枪支的名字
-        string WeaponName = gameObject.name;
-        // 将字符串类型的枪支名称转换为对应的枚举类型值
-        /* 解析：
-         *  1.System.Enum.Parse - 这是一个静态方法，用于将字符串解析为枚举类型
-         *  2.typeof(GunType) - 获取GunType枚举的类型信息
-         *  3.WeaponName - 字符串变量，包含枪支的名称（比如"Glock", "AK47"等）
-         *  4.(GunType) - 类型转换，将解析结果转换为GunType枚举类型
-         *  5.currentGunType - 存储转换后的枚举值
-         */
-        currentGunType = (GunType)System.Enum.Parse(typeof(GunType), WeaponName);
-        // 根据上述获得的枚举类型值获取对应的枪支
-        /* 解析：
-         *  1.currentGunType - 这是一个枚举类型的变量，存储当前枪支的类型（比如GunType.Glock）
-         *  2.(int)currentGunType - 将枚举值转换为整数索引，枚举值在C#中本质上是整数，GunType.Glock 对应索引 0
-         *  3.gunDatas[(int)currentGunType] - 从gunDatas数组中获取对应索引的元素
-         *  4.GunData currentGunData - 声明一个GunData类型的变量，并赋值为获取到的数据
-         *  综上，武器类型枚举中的索引一定要和武器数组中的索引一一对应
-         */
-        GunData currentGunData = gunDatas[(int)currentGunType];
-        // 初始化枪支数据
-        maxCarriedAmmo = currentGunData.maxCarriedAmmo;
-        currentCarriedAmmo = maxCarriedAmmo;
-        magazineSize = currentGunData.magezineSize;
-        currentMagazineAmmo = magazineSize; // 初始满弹匣
-        currentFireMode = currentGunData.fireMode;
-        lastFireTime = 0.0f;
+        string weaponName =
+            gameObject.name;
+
+        currentGunType =
+            (GunType)System.Enum.Parse(
+                typeof(GunType),
+                weaponName
+            );
+
+        GunData currentGunData =
+            gunDatas[(int)currentGunType];
+
+        maxCarriedAmmo =
+            currentGunData.maxCarriedAmmo;
+
+        currentCarriedAmmo =
+            maxCarriedAmmo;
+
+        magazineSize =
+            currentGunData.magezineSize;
+
+        currentMagazineAmmo =
+            magazineSize;
+
+        currentFireMode =
+            currentGunData.fireMode;
+
+        lastFireTime = 0f;
     }
 
-    // 方法：射击状态实现
     private void ShootingState()
     {
-        GunData currentGunData = gunDatas[(int)currentGunType];
-        // 单点射击（对于半自动或全自动武器都适用）
-        if (isSingleFire && currentMagazineAmmo > 0)
+        GunData currentGunData =
+            gunDatas[(int)currentGunType];
+
+        if (isSingleFire &&
+            currentMagazineAmmo > 0 &&
+            Time.time >=
+                lastFireTime +
+                currentGunData.singleFireRate)
         {
-            if (Time.time >= lastFireTime + currentGunData.singleFireRate)  // 只有当射击间隔满足时才允许射击
-            {
-                singleFireTrigger = true;
-                lastFireTime = Time.time;   // 更新最后射击时间
-            }
+            singleFireTrigger = true;
+            lastFireTime = Time.time;
         }
-        // 自动射击（仅全自动武器）
-        if (currentGunData.fireMode == FireMode.FullAuto)
+
+        if (currentGunData.fireMode ==
+                FireMode.FullAuto &&
+            isAutoFire &&
+            currentMagazineAmmo > 0 &&
+            Time.time >=
+                lastFireTime +
+                currentGunData.fullAutoFireRate)
         {
-            if(isAutoFire && currentMagazineAmmo > 0)
-            {
-                // 检查射击间隔是否满足
-                if (Time.time >= lastFireTime + currentGunData.fullAutoFireRate)
-                {
-                    // 满足射击间隔，保持射击状态
-                    autoFireTrigger = true;
-                    lastFireTime = Time.time;   // 更新最后射击时间
-                }
-            }
+            autoFireTrigger = true;
+            lastFireTime = Time.time;
         }
-        // 检测鼠标左键释放事件
+
         if (Input.GetKeyUp(KeyCode.Mouse0))
         {
-            // 释放鼠标左键，停止射击
             isSingleFire = false;
             isAutoFire = false;
         }
     }
 
-    // 方法：子弹管理
     private void HandleAmmo()
     {
-        // 限制携弹数
-        if(currentCarriedAmmo >= maxCarriedAmmo)
+        if (currentCarriedAmmo > maxCarriedAmmo)
         {
-            currentCarriedAmmo = maxCarriedAmmo;
+            currentCarriedAmmo =
+                maxCarriedAmmo;
         }
-        // 判断能否换弹
-        if (currentMagazineAmmo == magazineSize || currentCarriedAmmo == 0) canReload = false;
-        else canReload = true;
-        // 换弹计算
-        if (canReload && isReload)
+
+        canReload =
+            currentMagazineAmmo !=
+                magazineSize &&
+            currentCarriedAmmo != 0;
+
+        if (!canReload || !isReload)
         {
-            // 1.当前弹匣子弹数 + 当前携弹数 > 弹匣容量
-            if (currentMagazineAmmo + currentCarriedAmmo > magazineSize)
-            {
-                currentCarriedAmmo -= (magazineSize - currentMagazineAmmo);
-                currentMagazineAmmo = magazineSize;
-            }
-            // 2.当前弹匣子弹数 + 当前携弹数 < 弹匣容量
-            if (currentMagazineAmmo + currentCarriedAmmo <= magazineSize)
-            {
-                currentMagazineAmmo += currentCarriedAmmo;
-                currentCarriedAmmo = 0;
-            }
+            return;
         }
+
+        if (currentMagazineAmmo +
+                currentCarriedAmmo >
+            magazineSize)
+        {
+            currentCarriedAmmo -=
+                magazineSize -
+                currentMagazineAmmo;
+
+            currentMagazineAmmo =
+                magazineSize;
+        }
+        else
+        {
+            currentMagazineAmmo +=
+                currentCarriedAmmo;
+
+            currentCarriedAmmo = 0;
+        }
+    }
+
+    private void OnValidate()
+    {
+        knifeDamage =
+            Mathf.Max(0f, knifeDamage);
+
+        knifeAttackRange =
+            Mathf.Max(
+                0.1f,
+                knifeAttackRange
+            );
+
+        knifeAttackAngle =
+            Mathf.Clamp(
+                knifeAttackAngle,
+                0f,
+                360f
+            );
+
+        knifeDamageWindowStart =
+            Mathf.Clamp01(
+                knifeDamageWindowStart
+            );
+
+        knifeDamageWindowEnd =
+            Mathf.Clamp01(
+                knifeDamageWindowEnd
+            );
+
+        if (knifeDamageWindowEnd <
+            knifeDamageWindowStart)
+        {
+            knifeDamageWindowEnd =
+                knifeDamageWindowStart;
+        }
+
+        knifeHitBufferSize =
+            Mathf.Max(
+                1,
+                knifeHitBufferSize
+            );
     }
 }
