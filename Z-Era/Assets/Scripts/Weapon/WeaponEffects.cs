@@ -9,10 +9,10 @@ public class WeaponEffects : MonoBehaviour
     [Tooltip("枪声音效")]
     private AudioClip shootSound;
 
-    [Tooltip("换弹音效_不为空")]
+    [Tooltip("换弹音效：弹匣不满")]
     private AudioClip reloadSound_LeftAmmo;
 
-    [Tooltip("换弹音效_为空")]
+    [Tooltip("换弹音效：弹匣为空")]
     private AudioClip reloadSound_OutOfAmmo;
 
     [Tooltip("子弹实例化位置（枪口）")]
@@ -51,14 +51,28 @@ public class WeaponEffects : MonoBehaviour
 
     #region 音频
 
+    [Header("武器动作音效")]
+
+    [Tooltip("取出武器音效")]
     public AudioClip takeOutWeaponSound;
+
+    [Tooltip("收起武器音效")]
     public AudioClip holsterWeaponSound;
+
+    [Header("匕首攻击音效")]
+
+    [Tooltip("匕首攻击未命中音效")]
+    public AudioClip knifeAttackSound;
+
+    [Tooltip("匕首攻击命中音效")]
+    public AudioClip knifeAttackHitSound;
 
     #endregion
 
     #region 玩法噪声
 
     [Header("玩法噪声")]
+
     [Tooltip("玩家身上的玩法噪声发射器，留空时自动向父物体查找")]
     [SerializeField]
     private NoiseEmitter noiseEmitter;
@@ -113,68 +127,132 @@ public class WeaponEffects : MonoBehaviour
     public WeaponEffectConfig[] weaponEffectConfigs =
         new WeaponEffectConfig[9]
     {
-        new WeaponEffectConfig { gunType = GunType.Glock },
-        new WeaponEffectConfig { gunType = GunType.DesertEagle },
-        new WeaponEffectConfig { gunType = GunType.Tec9 },
-        new WeaponEffectConfig { gunType = GunType.AK47 },
-        new WeaponEffectConfig { gunType = GunType.M4A4 },
-        new WeaponEffectConfig { gunType = GunType.Vector },
-        new WeaponEffectConfig { gunType = GunType.Uzi },
-        new WeaponEffectConfig { gunType = GunType.P90 },
-        new WeaponEffectConfig { gunType = GunType.MP5 }
+        new WeaponEffectConfig
+        {
+            gunType = GunType.Glock
+        },
+        new WeaponEffectConfig
+        {
+            gunType = GunType.DesertEagle
+        },
+        new WeaponEffectConfig
+        {
+            gunType = GunType.Tec9
+        },
+        new WeaponEffectConfig
+        {
+            gunType = GunType.AK47
+        },
+        new WeaponEffectConfig
+        {
+            gunType = GunType.M4A4
+        },
+        new WeaponEffectConfig
+        {
+            gunType = GunType.Vector
+        },
+        new WeaponEffectConfig
+        {
+            gunType = GunType.Uzi
+        },
+        new WeaponEffectConfig
+        {
+            gunType = GunType.P90
+        },
+        new WeaponEffectConfig
+        {
+            gunType = GunType.MP5
+        }
     };
 
-    void Awake()
+    private void Awake()
     {
-        audioSource = GetComponent<AudioSource>();
+        audioSource =
+            GetComponent<AudioSource>();
+
         HandleEffects();
     }
 
-    void Start()
+    private void Start()
     {
-        weaponController = GetComponent<WeaponController>();
-        cameraRecoil = GetComponentInParent<CameraRecoil>();
-        weaponSpread = GetComponent<WeaponSpread>();
+        weaponController =
+            GetComponent<WeaponController>();
+
+        cameraRecoil =
+            GetComponentInParent<CameraRecoil>();
+
+        weaponSpread =
+            GetComponent<WeaponSpread>();
 
         if (noiseEmitter == null)
         {
-            noiseEmitter = GetComponentInParent<NoiseEmitter>();
+            noiseEmitter =
+                GetComponentInParent<NoiseEmitter>();
         }
     }
 
-    void Update()
+    private void Update()
     {
-        if (weaponController == null || cameraRecoil == null)
+        if (weaponController == null ||
+            cameraRecoil == null)
         {
             return;
         }
 
         bool isFiring =
-            weaponController.CurrentGunData.fireMode == FireMode.FullAuto
-            && Input.GetKey(KeyCode.Mouse0)
-            && weaponController.currentMagazineAmmo > 0;
+            weaponController.CurrentGunData.fireMode ==
+                FireMode.FullAuto &&
+            Input.GetKey(KeyCode.Mouse0) &&
+            weaponController.currentMagazineAmmo > 0;
 
         cameraRecoil.SetFiring(isFiring);
     }
 
     private void HandleEffects()
     {
-        string gunName = gameObject.name;
+        string gunName =
+            gameObject.name;
 
         GunType currentGunType =
-            (GunType)System.Enum.Parse(typeof(GunType), gunName);
+            (GunType)System.Enum.Parse(
+                typeof(GunType),
+                gunName
+            );
 
-        int currentWeaponIndex = (int)currentGunType;
+        int currentWeaponIndex =
+            (int)currentGunType;
 
-        currentWeaponConfig = weaponEffectConfigs[currentWeaponIndex];
-        shootSound = currentWeaponConfig.shootSound;
-        reloadSound_LeftAmmo = currentWeaponConfig.reloadSound_LeftAmmo;
-        reloadSound_OutOfAmmo = currentWeaponConfig.reloadSound_OutOfAmmo;
-        bulletSpawnPoint = currentWeaponConfig.bulletSpawnPoint;
-        casingEjectionPoint = currentWeaponConfig.casingEjectionPoint;
-        casing = currentWeaponConfig.casing;
-        muzzleFlash = currentWeaponConfig.muzzleFlash;
-        bullet = currentWeaponConfig.bullet;
+        currentWeaponConfig =
+            weaponEffectConfigs[
+                currentWeaponIndex
+            ];
+
+        shootSound =
+            currentWeaponConfig.shootSound;
+
+        reloadSound_LeftAmmo =
+            currentWeaponConfig
+                .reloadSound_LeftAmmo;
+
+        reloadSound_OutOfAmmo =
+            currentWeaponConfig
+                .reloadSound_OutOfAmmo;
+
+        bulletSpawnPoint =
+            currentWeaponConfig.bulletSpawnPoint;
+
+        casingEjectionPoint =
+            currentWeaponConfig
+                .casingEjectionPoint;
+
+        casing =
+            currentWeaponConfig.casing;
+
+        muzzleFlash =
+            currentWeaponConfig.muzzleFlash;
+
+        bullet =
+            currentWeaponConfig.bullet;
     }
 
     public void ShootEffects()
@@ -185,34 +263,54 @@ public class WeaponEffects : MonoBehaviour
         muzzleFlash.Emit(1);
 
         float spreadAngle =
-            weaponSpread != null ? weaponSpread.ConsumeSpread() : 0f;
+            weaponSpread != null
+                ? weaponSpread.ConsumeSpread()
+                : 0f;
 
-        Vector2 screenCenter = new Vector2(
-            Screen.width * 0.5f,
-            Screen.height * 0.5f
-        );
+        Vector2 screenCenter =
+            new Vector2(
+                Screen.width * 0.5f,
+                Screen.height * 0.5f
+            );
 
         float halfFovRad =
-            weaponCamera.fieldOfView * 0.5f * Mathf.Deg2Rad;
+            weaponCamera.fieldOfView *
+            0.5f *
+            Mathf.Deg2Rad;
 
         float focalLength =
-            (Screen.height * 0.5f) / Mathf.Tan(halfFovRad);
+            (Screen.height * 0.5f) /
+            Mathf.Tan(halfFovRad);
 
         float spreadRadiusPixels =
-            Mathf.Tan(spreadAngle * Mathf.Deg2Rad) * focalLength;
+            Mathf.Tan(
+                spreadAngle * Mathf.Deg2Rad
+            ) *
+            focalLength;
 
         Vector2 randomOffset =
-            Random.insideUnitCircle * spreadRadiusPixels;
+            Random.insideUnitCircle *
+            spreadRadiusPixels;
 
-        Vector2 screenPoint = screenCenter + randomOffset;
+        Vector2 screenPoint =
+            screenCenter + randomOffset;
 
-        Ray ray = weaponCamera.ScreenPointToRay(
-            new Vector3(screenPoint.x, screenPoint.y, 0f)
-        );
+        Ray ray =
+            weaponCamera.ScreenPointToRay(
+                new Vector3(
+                    screenPoint.x,
+                    screenPoint.y,
+                    0f
+                )
+            );
 
         Vector3 targetPoint;
 
-        if (Physics.Raycast(ray, out RaycastHit hit, 100f))
+        if (Physics.Raycast(
+            ray,
+            out RaycastHit hit,
+            100f
+        ))
         {
             targetPoint = hit.point;
         }
@@ -222,19 +320,30 @@ public class WeaponEffects : MonoBehaviour
         }
 
         Vector3 shootDirection =
-            (targetPoint - bulletSpawnPoint.position).normalized;
+            (
+                targetPoint -
+                bulletSpawnPoint.position
+            ).normalized;
 
-        GunData gunData = weaponController.CurrentGunData;
+        GunData gunData =
+            weaponController.CurrentGunData;
 
         Quaternion bulletRotation =
-            Quaternion.LookRotation(shootDirection)
-            * Quaternion.Euler(90f, 0f, 0f);
+            Quaternion.LookRotation(
+                shootDirection
+            ) *
+            Quaternion.Euler(
+                90f,
+                0f,
+                0f
+            );
 
-        BulletHandle bulletInstance = bulletPool.Get(
-            bullet,
-            bulletSpawnPoint.position,
-            bulletRotation
-        );
+        BulletHandle bulletInstance =
+            bulletPool.Get(
+                bullet,
+                bulletSpawnPoint.position,
+                bulletRotation
+            );
 
         if (bulletInstance != null)
         {
@@ -262,13 +371,21 @@ public class WeaponEffects : MonoBehaviour
 
         if (casing == null)
         {
-            Debug.LogWarning($"{gameObject.name} 没有设置弹壳预制体。");
+            Debug.LogWarning(
+                $"{gameObject.name} " +
+                "没有设置弹壳预制体。"
+            );
+
             return;
         }
 
         if (casingEjectionPoint == null)
         {
-            Debug.LogWarning($"{gameObject.name} 没有设置弹壳抛出位置。");
+            Debug.LogWarning(
+                $"{gameObject.name} " +
+                "没有设置弹壳抛出位置。"
+            );
+
             return;
         }
 
@@ -281,16 +398,19 @@ public class WeaponEffects : MonoBehaviour
 
     public void ReloadEffects()
     {
-        if (weaponController.currentMagazineAmmo != 0)
+        if (weaponController
+                .currentMagazineAmmo != 0)
         {
-            audioSource.clip = reloadSound_LeftAmmo;
-            audioSource.Play();
+            audioSource.clip =
+                reloadSound_LeftAmmo;
         }
         else
         {
-            audioSource.clip = reloadSound_OutOfAmmo;
-            audioSource.Play();
+            audioSource.clip =
+                reloadSound_OutOfAmmo;
         }
+
+        audioSource.Play();
 
         if (noiseEmitter != null)
         {
@@ -302,17 +422,65 @@ public class WeaponEffects : MonoBehaviour
         }
     }
 
-    public void PlayWeaponActionSound(string action)
+    public void PlayWeaponActionSound(
+        string action
+    )
     {
+        if (audioSource == null)
+        {
+            return;
+        }
+
         if (action == "takeout")
         {
-            audioSource.clip = takeOutWeaponSound;
+            audioSource.clip =
+                takeOutWeaponSound;
+
             audioSource.Play();
         }
         else if (action == "holster")
         {
-            audioSource.clip = holsterWeaponSound;
+            audioSource.clip =
+                holsterWeaponSound;
+
             audioSource.Play();
         }
+    }
+
+    /// <summary>
+    /// 播放匕首攻击命中或未命中音效。
+    /// didHit 为 true 时播放 KnifeAttackHit，
+    /// 否则播放 KnifeAttack。
+    /// </summary>
+    public void PlayKnifeAttackResultSound(
+        bool didHit
+    )
+    {
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        AudioClip selectedSound =
+            didHit
+                ? knifeAttackHitSound
+                : knifeAttackSound;
+
+        if (selectedSound == null)
+        {
+            Debug.LogWarning(
+                didHit
+                    ? $"{gameObject.name} 没有设置 KnifeAttackHit 音效。"
+                    : $"{gameObject.name} 没有设置 KnifeAttack 音效。",
+                this
+            );
+
+            return;
+        }
+
+        // 使用 PlayOneShot，避免覆盖武器动作或枪声音效。
+        audioSource.PlayOneShot(
+            selectedSound
+        );
     }
 }

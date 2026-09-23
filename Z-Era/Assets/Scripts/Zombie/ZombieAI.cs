@@ -589,7 +589,7 @@ public class ZombieAI : MonoBehaviour, INoiseListener
             damage = attackDamage,
             hitPart = HitPart.Body,
             hitPoint = currentTarget.position,
-            souece = DamageSource.ZombieAttack,
+            source = DamageSource.ZombieAttack,
             attacker = gameObject
         };
 

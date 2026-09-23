@@ -1,63 +1,63 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 
 public class CrosshairHUD : MonoBehaviour
 {
-    [Header("×¼ĞÇ²¿¼ş")]
-    [Tooltip("×¼ĞÇÉÏ·½ºáÏß")]
+    [Header("å‡†æ˜Ÿéƒ¨ä»¶")]
+    [Tooltip("å‡†æ˜Ÿä¸Šæ–¹æ¨ªçº¿")]
     public Image topLine;
 
-    [Tooltip("×¼ĞÇÏÂ·½ºáÏß")]
+    [Tooltip("å‡†æ˜Ÿä¸‹æ–¹æ¨ªçº¿")]
     public Image bottomLine;
 
-    [Tooltip("×¼ĞÇ×ó·½ºáÏß")]
+    [Tooltip("å‡†æ˜Ÿå·¦æ–¹æ¨ªçº¿")]
     public Image leftLine;
 
-    [Tooltip("×¼ĞÇÓÒ·½ºáÏß")]
+    [Tooltip("å‡†æ˜Ÿå³æ–¹æ¨ªçº¿")]
     public Image rightLine;
 
-    [Header("»»µ¯Í¼±ê")]
-    [Tooltip("»»µ¯Ê±ÏÔÊ¾µÄÍ¼±ê")]
+    [Header("æ¢å¼¹å›¾æ ‡")]
+    [Tooltip("æ¢å¼¹æ—¶æ˜¾ç¤ºçš„å›¾æ ‡")]
     public Image reloadIcon;
 
-    [Tooltip("»»µ¯Í¼±êĞı×ªËÙ¶È (¶È/Ãë)")]
+    [Tooltip("æ¢å¼¹å›¾æ ‡æ—‹è½¬é€Ÿåº¦ (åº¦/ç§’)")]
     [Range(0f, 360f)]
     public float reloadIconRotationSpeed = 360f;
 
-    [Header("µ¯Ï»¿Õ×´Ì¬")]
-    [Tooltip("µ¯Ï»¿ÕÊ±ÏÔÊ¾µÄÍ¼±ê")]
+    [Header("å¼¹åŒ£ç©ºçŠ¶æ€")]
+    [Tooltip("å¼¹åŒ£ç©ºæ—¶æ˜¾ç¤ºçš„å›¾æ ‡")]
     public Image outOfAmmoIcon;
 
-    [Tooltip("µ¯Ï»¿ÕÊ±ÉÁË¸ÆµÂÊ")]
+    [Tooltip("å¼¹åŒ£ç©ºæ—¶é—ªçƒé¢‘ç‡")]
     [Range(1f, 10f)]
     public float outOfAmmoBlinkSpeed = 3f;
 
-    [Header("×¼ĞÇÍâ¹Û")]
-    [Tooltip("×¼ĞÇÑÕÉ«")]
+    [Header("å‡†æ˜Ÿå¤–è§‚")]
+    [Tooltip("å‡†æ˜Ÿé¢œè‰²")]
     public Color crosshairColor = Color.white;
 
-    [Tooltip("×¼ĞÇÏßÌõ³¤¶È")]
+    [Tooltip("å‡†æ˜Ÿçº¿æ¡é•¿åº¦")]
     [Range(5f, 50f)]
     public float lineLength = 20f;
 
-    [Tooltip("×¼ĞÇÏßÌõ¿í¶È")]
+    [Tooltip("å‡†æ˜Ÿçº¿æ¡å®½åº¦")]
     [Range(1f, 10f)]
     public float lineWidth = 2f;
 
-    [Header("À©É¢ÉèÖÃ")]
-    [Tooltip("¾²Ì¬Ê±×¼ĞÇÖĞĞÄµ½ÏßÌõµÄ¾àÀë")]
+    [Header("æ‰©æ•£è®¾ç½®")]
+    [Tooltip("é™æ€æ—¶å‡†æ˜Ÿä¸­å¿ƒåˆ°çº¿æ¡çš„è·ç¦»")]
     [Range(0f, 50f)]
     public float baseSpread = 5f;
 
-    [Tooltip("Éä»÷Ê±×î´óÀ©É¢¾àÀë")]
+    [Tooltip("å°„å‡»æ—¶æœ€å¤§æ‰©æ•£è·ç¦»")]
     [Range(10f, 200f)]
     public float maxSpread = 80f;
 
-    [Tooltip("Ã¿´ÎÉä»÷Ôö¼ÓµÄÀ©É¢Á¿")]
+    [Tooltip("æ¯æ¬¡å°„å‡»å¢åŠ çš„æ‰©æ•£é‡")]
     [Range(5f, 50f)]
     public float spreadPerShot = 25f;
 
-    [Tooltip("»Ö¸´ËÙ¶È (ÖµÔ½´óÔ½¿ì)")]
+    [Tooltip("æ¢å¤é€Ÿåº¦ (å€¼è¶Šå¤§è¶Šå¿«)")]
     [Range(1f, 20f)]
     public float recoverSpeed = 8f;
 
@@ -135,17 +135,17 @@ public class CrosshairHUD : MonoBehaviour
         int layerIndex = (int)currentWeapon.CurrentGunData.gunType + 1;
         AnimatorStateInfo state = currentWeaponAnimator.GetCurrentAnimatorStateInfo(layerIndex);
 
-        // ¼ì²â»»µ¯×´Ì¬
+        // æ£€æµ‹æ¢å¼¹çŠ¶æ€
         bool isReloadOut = state.IsName("ReloadOutOfAmmo");
         bool isReloadLeft = state.IsName("ReloadLeftAmmo");
 
-        // ¸üĞÂ»»µ¯×´Ì¬
+        // æ›´æ–°æ¢å¼¹çŠ¶æ€
         isReloading = isReloadOut || isReloadLeft;
     }
 
     private void UpdateOutOfAmmoState()
     {
-        // Ö»ÓĞÔÚÓĞÎäÆ÷ÇÒÎäÆ÷Î´»»µ¯Ê±²Å¼ì²éµ¯Ï»×´Ì¬
+        // åªæœ‰åœ¨æœ‰æ­¦å™¨ä¸”æ­¦å™¨æœªæ¢å¼¹æ—¶æ‰æ£€æŸ¥å¼¹åŒ£çŠ¶æ€
         if (currentWeapon != null && !isReloading)
         {
             isOutOfAmmo = currentWeapon.currentMagazineAmmo <= 0;
@@ -162,7 +162,7 @@ public class CrosshairHUD : MonoBehaviour
 
         if (isFiring)
         {
-            // Éä»÷ÖĞ£ºÀ©É¢Ôö¼Ó
+            // å°„å‡»ä¸­ï¼šæ‰©æ•£å¢åŠ 
             currentSpread = Mathf.Min(
                 currentSpread + spreadPerShot * Time.deltaTime,
                 maxSpread
@@ -170,7 +170,7 @@ public class CrosshairHUD : MonoBehaviour
         }
         else
         {
-            // ·ÇÉä»÷×´Ì¬£ºÁ¢¼´»Ö¸´
+            // éå°„å‡»çŠ¶æ€ï¼šç«‹å³æ¢å¤
             currentSpread = Mathf.Lerp(
                 currentSpread,
                 baseSpread,
@@ -181,11 +181,11 @@ public class CrosshairHUD : MonoBehaviour
 
     private bool IsWeaponFiring()
     {
-        // Ìõ¼ş1£º±ØĞë°´×¡Êó±ê×ó¼ü
+        // æ¡ä»¶1ï¼šå¿…é¡»æŒ‰ä½é¼ æ ‡å·¦é”®
         if (!Input.GetKey(KeyCode.Mouse0))
             return false;
 
-        // Ìõ¼ş2£º¶¯»­±ØĞëÊÇ Fire ×´Ì¬
+        // æ¡ä»¶2ï¼šåŠ¨ç”»å¿…é¡»æ˜¯ Fire çŠ¶æ€
         if (currentWeapon == null || currentWeaponAnimator == null)
             return false;
 
@@ -201,10 +201,10 @@ public class CrosshairHUD : MonoBehaviour
             leftLine == null || rightLine == null)
             return;
 
-        // ¸ù¾İ»»µ¯×´Ì¬ºÍµ¯Ï»¿Õ×´Ì¬¿ØÖÆ×¼ĞÇ¿É¼ûĞÔ
+        // æ ¹æ®æ¢å¼¹çŠ¶æ€å’Œå¼¹åŒ£ç©ºçŠ¶æ€æ§åˆ¶å‡†æ˜Ÿå¯è§æ€§
         bool shouldShowCrosshair = !isReloading && !isOutOfAmmo;
 
-        // ¸üĞÂ×¼ĞÇ¿É¼ûĞÔ
+        // æ›´æ–°å‡†æ˜Ÿå¯è§æ€§
         if (topLine != null) topLine.enabled = shouldShowCrosshair;
         if (bottomLine != null) bottomLine.enabled = shouldShowCrosshair;
         if (leftLine != null) leftLine.enabled = shouldShowCrosshair;
@@ -235,14 +235,14 @@ public class CrosshairHUD : MonoBehaviour
         if (reloadIcon == null)
             return;
 
-        // ¸üĞÂ»»µ¯Í¼±ê¿É¼ûĞÔ
+        // æ›´æ–°æ¢å¼¹å›¾æ ‡å¯è§æ€§
         reloadIcon.gameObject.SetActive(isReloading);
 
-        // Ğı×ªÍ¼±ê£¨½öÔÚÏÔÊ¾Ê±¸üĞÂ£©
+        // æ—‹è½¬å›¾æ ‡ï¼ˆä»…åœ¨æ˜¾ç¤ºæ—¶æ›´æ–°ï¼‰
         if (isReloading)
         {
             reloadIconRotation += reloadIconRotationSpeed * Time.deltaTime;
-            // Í¨¹ıÊ¹ÓÃ¸º½Ç¶ÈÊµÏÖË³Ê±ÕëĞı×ª
+            // é€šè¿‡ä½¿ç”¨è´Ÿè§’åº¦å®ç°é¡ºæ—¶é’ˆæ—‹è½¬
             reloadIcon.transform.rotation =
                 Quaternion.Euler(0, 0, -reloadIconRotation);
         }
@@ -253,10 +253,10 @@ public class CrosshairHUD : MonoBehaviour
         if (outOfAmmoIcon == null)
             return;
 
-        // ¸üĞÂµ¯Ï»¿ÕÍ¼±ê¿É¼ûĞÔ
+        // æ›´æ–°å¼¹åŒ£ç©ºå›¾æ ‡å¯è§æ€§
         outOfAmmoIcon.gameObject.SetActive(isOutOfAmmo);
 
-        // ÉÁË¸Âß¼­
+        // é—ªçƒé€»è¾‘
         if (isOutOfAmmo)
         {
             outOfAmmoBlinkTime += Time.deltaTime;
@@ -265,7 +265,7 @@ public class CrosshairHUD : MonoBehaviour
                 1f
             );
 
-            // ÉèÖÃÍ¼±êÍ¸Ã÷¶È
+            // è®¾ç½®å›¾æ ‡é€æ˜åº¦
             Color c = outOfAmmoIcon.color;
             c.a = outOfAmmoBlinkAlpha;
             outOfAmmoIcon.color = c;
@@ -296,15 +296,6 @@ public class CrosshairHUD : MonoBehaviour
         {
             rightLine.color = crosshairColor;
             rightLine.rectTransform.sizeDelta = new Vector2(lineLength, lineWidth);
-        }
-    }
-
-    private void OnValidate()
-    {
-        if (Application.isPlaying)
-        {
-            ApplyCrosshairAppearance();
-            UpdateCrosshairPositions();
         }
     }
 

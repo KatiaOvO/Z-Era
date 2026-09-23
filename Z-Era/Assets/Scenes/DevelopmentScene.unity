@@ -13703,7 +13703,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   knifeDamage: 50
-  knifeAttackRange: 1.5
+  knifeAttackRange: 2
   knifeAttackAngle: 60
   knifeAttackOrigin: {fileID: 0}
   zombieLayerMask:
@@ -13714,6 +13714,7 @@ MonoBehaviour:
     m_Bits: 0
   knifeDamageWindowStart: 0.2
   knifeDamageWindowEnd: 0.5
+  knifeAttackSoundTime: 0.05
   knifeHitBufferSize: 64
   currentCarriedAmmo: 0
   currentMagazineAmmo: 0
@@ -13869,6 +13870,8 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  knifeAttackSound: {fileID: 8300000, guid: 871dd1385fc13364db308c7bb942e2fa, type: 3}
+  knifeAttackHitSound: {fileID: 8300000, guid: 3484599481c739a42a1a7539e57c9947, type: 3}
   noiseEmitter: {fileID: 1062446610}
   shootNoiseRadius: 35
   shootAngerValue: 3
@@ -15013,6 +15016,8 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  knifeAttackSound: {fileID: 8300000, guid: 871dd1385fc13364db308c7bb942e2fa, type: 3}
+  knifeAttackHitSound: {fileID: 8300000, guid: 3484599481c739a42a1a7539e57c9947, type: 3}
   noiseEmitter: {fileID: 1062446610}
   shootNoiseRadius: 35
   shootAngerValue: 3
@@ -15116,7 +15121,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   knifeDamage: 50
-  knifeAttackRange: 1.5
+  knifeAttackRange: 2
   knifeAttackAngle: 60
   knifeAttackOrigin: {fileID: 0}
   zombieLayerMask:
@@ -15127,6 +15132,7 @@ MonoBehaviour:
     m_Bits: 0
   knifeDamageWindowStart: 0.2
   knifeDamageWindowEnd: 0.5
+  knifeAttackSoundTime: 0.05
   knifeHitBufferSize: 64
   currentCarriedAmmo: 0
   currentMagazineAmmo: 0
@@ -23762,6 +23768,8 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  knifeAttackSound: {fileID: 8300000, guid: 871dd1385fc13364db308c7bb942e2fa, type: 3}
+  knifeAttackHitSound: {fileID: 8300000, guid: 3484599481c739a42a1a7539e57c9947, type: 3}
   noiseEmitter: {fileID: 1062446610}
   shootNoiseRadius: 35
   shootAngerValue: 3
@@ -23865,7 +23873,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   knifeDamage: 50
-  knifeAttackRange: 1.5
+  knifeAttackRange: 2
   knifeAttackAngle: 60
   knifeAttackOrigin: {fileID: 0}
   zombieLayerMask:
@@ -23876,6 +23884,7 @@ MonoBehaviour:
     m_Bits: 0
   knifeDamageWindowStart: 0.2
   knifeDamageWindowEnd: 0.5
+  knifeAttackSoundTime: 0.05
   knifeHitBufferSize: 64
   currentCarriedAmmo: 0
   currentMagazineAmmo: 0
@@ -24139,6 +24148,8 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  knifeAttackSound: {fileID: 8300000, guid: 871dd1385fc13364db308c7bb942e2fa, type: 3}
+  knifeAttackHitSound: {fileID: 8300000, guid: 3484599481c739a42a1a7539e57c9947, type: 3}
   noiseEmitter: {fileID: 1062446610}
   shootNoiseRadius: 35
   shootAngerValue: 3
@@ -24242,7 +24253,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   knifeDamage: 50
-  knifeAttackRange: 1.5
+  knifeAttackRange: 2
   knifeAttackAngle: 60
   knifeAttackOrigin: {fileID: 0}
   zombieLayerMask:
@@ -24253,6 +24264,7 @@ MonoBehaviour:
     m_Bits: 0
   knifeDamageWindowStart: 0.2
   knifeDamageWindowEnd: 0.5
+  knifeAttackSoundTime: 0.05
   knifeHitBufferSize: 64
   currentCarriedAmmo: 0
   currentMagazineAmmo: 0
@@ -24645,6 +24657,8 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  knifeAttackSound: {fileID: 8300000, guid: 871dd1385fc13364db308c7bb942e2fa, type: 3}
+  knifeAttackHitSound: {fileID: 8300000, guid: 3484599481c739a42a1a7539e57c9947, type: 3}
   noiseEmitter: {fileID: 1062446610}
   shootNoiseRadius: 35
   shootAngerValue: 3
@@ -24748,7 +24762,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   knifeDamage: 50
-  knifeAttackRange: 1.5
+  knifeAttackRange: 2
   knifeAttackAngle: 60
   knifeAttackOrigin: {fileID: 0}
   zombieLayerMask:
@@ -24759,6 +24773,7 @@ MonoBehaviour:
     m_Bits: 0
   knifeDamageWindowStart: 0.2
   knifeDamageWindowEnd: 0.5
+  knifeAttackSoundTime: 0.05
   knifeHitBufferSize: 64
   currentCarriedAmmo: 0
   currentMagazineAmmo: 0
@@ -25443,6 +25458,8 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  knifeAttackSound: {fileID: 8300000, guid: 871dd1385fc13364db308c7bb942e2fa, type: 3}
+  knifeAttackHitSound: {fileID: 8300000, guid: 3484599481c739a42a1a7539e57c9947, type: 3}
   noiseEmitter: {fileID: 1062446610}
   shootNoiseRadius: 35
   shootAngerValue: 3
@@ -25546,7 +25563,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   knifeDamage: 50
-  knifeAttackRange: 1.5
+  knifeAttackRange: 2
   knifeAttackAngle: 60
   knifeAttackOrigin: {fileID: 0}
   zombieLayerMask:
@@ -25557,6 +25574,7 @@ MonoBehaviour:
     m_Bits: 0
   knifeDamageWindowStart: 0.2
   knifeDamageWindowEnd: 0.5
+  knifeAttackSoundTime: 0.05
   knifeHitBufferSize: 64
   currentCarriedAmmo: 0
   currentMagazineAmmo: 0
@@ -26218,6 +26236,8 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  knifeAttackSound: {fileID: 8300000, guid: 871dd1385fc13364db308c7bb942e2fa, type: 3}
+  knifeAttackHitSound: {fileID: 8300000, guid: 3484599481c739a42a1a7539e57c9947, type: 3}
   noiseEmitter: {fileID: 1062446610}
   shootNoiseRadius: 35
   shootAngerValue: 3
@@ -26321,7 +26341,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   knifeDamage: 50
-  knifeAttackRange: 1.5
+  knifeAttackRange: 2
   knifeAttackAngle: 60
   knifeAttackOrigin: {fileID: 0}
   zombieLayerMask:
@@ -26332,6 +26352,7 @@ MonoBehaviour:
     m_Bits: 0
   knifeDamageWindowStart: 0.2
   knifeDamageWindowEnd: 0.5
+  knifeAttackSoundTime: 0.05
   knifeHitBufferSize: 64
   currentCarriedAmmo: 0
   currentMagazineAmmo: 0
@@ -26607,6 +26628,8 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  knifeAttackSound: {fileID: 8300000, guid: 871dd1385fc13364db308c7bb942e2fa, type: 3}
+  knifeAttackHitSound: {fileID: 8300000, guid: 3484599481c739a42a1a7539e57c9947, type: 3}
   noiseEmitter: {fileID: 1062446610}
   shootNoiseRadius: 35
   shootAngerValue: 3
@@ -26710,7 +26733,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   knifeDamage: 50
-  knifeAttackRange: 1.5
+  knifeAttackRange: 2
   knifeAttackAngle: 60
   knifeAttackOrigin: {fileID: 0}
   zombieLayerMask:
@@ -26721,6 +26744,7 @@ MonoBehaviour:
     m_Bits: 0
   knifeDamageWindowStart: 0.2
   knifeDamageWindowEnd: 0.5
+  knifeAttackSoundTime: 0.05
   knifeHitBufferSize: 64
   currentCarriedAmmo: 0
   currentMagazineAmmo: 0
@@ -29618,6 +29642,8 @@ MonoBehaviour:
   weaponCamera: {fileID: 1482657787}
   takeOutWeaponSound: {fileID: 8300000, guid: fa2622bdb49aee74ab5443a029d14f04, type: 3}
   holsterWeaponSound: {fileID: 8300000, guid: 4910803a566d9b045be72017dcbd75b0, type: 3}
+  knifeAttackSound: {fileID: 8300000, guid: 871dd1385fc13364db308c7bb942e2fa, type: 3}
+  knifeAttackHitSound: {fileID: 8300000, guid: 3484599481c739a42a1a7539e57c9947, type: 3}
   noiseEmitter: {fileID: 1062446610}
   shootNoiseRadius: 35
   shootAngerValue: 3
@@ -29721,7 +29747,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   knifeDamage: 50
-  knifeAttackRange: 1.5
+  knifeAttackRange: 2
   knifeAttackAngle: 60
   knifeAttackOrigin: {fileID: 0}
   zombieLayerMask:
@@ -29732,6 +29758,7 @@ MonoBehaviour:
     m_Bits: 0
   knifeDamageWindowStart: 0.2
   knifeDamageWindowEnd: 0.5
+  knifeAttackSoundTime: 0.05
   knifeHitBufferSize: 64
   currentCarriedAmmo: 0
   currentMagazineAmmo: 0
@@ -30317,7 +30344,7 @@ Transform:
   m_GameObject: {fileID: 1015107139471776721}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.31496465, y: 0, z: 2.781}
+  m_LocalPosition: {x: 0.373, y: 0, z: 3.273}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -33822,8 +33849,8 @@ MonoBehaviour:
   maxMoveAngle: 60
   attackDistance: 1.5
   attackDamage: 20
-  attackDamageWindowStart: 0
-  attackDamageWindowEnd: 0.5
+  attackDamageWindowStart: 0.1
+  attackDamageWindowEnd: 0.6
   noiseInvestigationStopDistance: 0.8
   noiseMemoryDuration: 6
   drawGizmos: 1

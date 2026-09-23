@@ -223,7 +223,7 @@ public class BulletHandle : MonoBehaviour
             damage = bulletDamage,
             hitPart = hitPart,
             hitPoint = hitPoint,
-            souece = DamageSource.Bullet,
+            source = DamageSource.Bullet,
             attacker = bulletAttacker
         };
 

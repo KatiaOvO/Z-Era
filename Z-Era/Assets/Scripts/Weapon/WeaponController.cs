@@ -78,6 +78,13 @@ public class WeaponController : MonoBehaviour
 
     #endregion
 
+    #region 匕首攻击结果
+
+    private bool hasKnifeHitThisAttack;
+    private bool hasPlayedKnifeResultSound;
+
+    #endregion
+
     #region 匕首候选目标
 
     private struct KnifeTargetCandidate
@@ -138,6 +145,14 @@ public class WeaponController : MonoBehaviour
     [Tooltip("伤害窗口结束时的动画归一化时间")]
     [SerializeField, Range(0f, 1f)]
     private float knifeDamageWindowEnd = 0.55f;
+
+    [Header("匕首攻击音效")]
+
+    [Tooltip(
+        "播放命中或未命中音效时的动画归一化时间"
+    )]
+    [Range(0f, 1f)]
+    public float knifeAttackSoundTime = 0.15f;
 
     [Tooltip("范围内碰撞体检测缓冲区初始大小")]
     [SerializeField, Min(1)]
@@ -473,14 +488,15 @@ public class WeaponController : MonoBehaviour
             currentState.IsName("TakeOutWeapon") ||
             currentState.IsName("HolsterWeapon"))
         {
-            // 当前动画正在播放，清除此帧被忽略的输入。
             singleFireTrigger = false;
             autoFireTrigger = false;
+
             isSingleFire = false;
             isAutoFire = false;
             isReload = false;
             isInspect = false;
             isKnifeAttack = false;
+
             return;
         }
 
@@ -578,6 +594,10 @@ public class WeaponController : MonoBehaviour
         isKnifeAttackActive = true;
         hasEnteredKnifeAttackState = false;
         hasAppliedKnifeDamageThisAttack = false;
+
+        hasKnifeHitThisAttack = false;
+        hasPlayedKnifeResultSound = false;
+
         knifeTargetCandidates.Clear();
 
         animator.Play(
@@ -595,47 +615,86 @@ public class WeaponController : MonoBehaviour
             return;
         }
 
-        if (currentState.IsName("KnifeAttack"))
+        if (!currentState.IsName("KnifeAttack"))
         {
-            hasEnteredKnifeAttackState = true;
-
-            float normalizedTime =
-                currentState.normalizedTime;
-
-            if (!hasAppliedKnifeDamageThisAttack &&
-                normalizedTime >=
-                    knifeDamageWindowStart &&
-                normalizedTime <=
-                    knifeDamageWindowEnd)
+            if (hasEnteredKnifeAttackState)
             {
-                hasAppliedKnifeDamageThisAttack =
-                    true;
-
-                ApplyKnifeAttackDamage();
+                EndKnifeAttackTracking(false);
             }
 
             return;
         }
 
-        if (hasEnteredKnifeAttackState)
+        hasEnteredKnifeAttackState = true;
+
+        float normalizedTime =
+            currentState.normalizedTime;
+
+        if (!hasAppliedKnifeDamageThisAttack &&
+            normalizedTime >=
+                knifeDamageWindowStart &&
+            normalizedTime <=
+                knifeDamageWindowEnd)
         {
-            EndKnifeAttackTracking(false);
+            hasAppliedKnifeDamageThisAttack = true;
+
+            hasKnifeHitThisAttack =
+                ApplyKnifeAttackDamage();
         }
+
+        if (!hasAppliedKnifeDamageThisAttack &&
+            normalizedTime > knifeDamageWindowEnd)
+        {
+            hasAppliedKnifeDamageThisAttack = true;
+            hasKnifeHitThisAttack = false;
+        }
+
+        if (hasPlayedKnifeResultSound ||
+            normalizedTime < knifeAttackSoundTime)
+        {
+            return;
+        }
+
+        bool didHit;
+
+        if (hasAppliedKnifeDamageThisAttack)
+        {
+            didHit = hasKnifeHitThisAttack;
+        }
+        else
+        {
+            didHit =
+                HasKnifeAttackTargetInAttackRange();
+        }
+
+        TryPlayKnifeAttackResultSound(didHit);
     }
 
-    private void ApplyKnifeAttackDamage()
+    private void TryPlayKnifeAttackResultSound(
+        bool didHit
+    )
     {
-        knifeTargetCandidates.Clear();
+        if (hasPlayedKnifeResultSound)
+        {
+            return;
+        }
 
+        hasPlayedKnifeResultSound = true;
+
+        if (weaponEffects == null)
+        {
+            return;
+        }
+
+        weaponEffects
+            .PlayKnifeAttackResultSound(didHit);
+    }
+
+    private bool HasKnifeAttackTargetInAttackRange()
+    {
         if (knifeAttackOrigin == null)
         {
-            Debug.LogError(
-                "Cannot apply knife damage: " +
-                "knifeAttackOrigin is missing!",
-                this
-            );
-
-            return;
+            return false;
         }
 
         if (knifeHitBuffer == null)
@@ -651,7 +710,7 @@ public class WeaponController : MonoBehaviour
 
         if (forward.sqrMagnitude < 0.0001f)
         {
-            return;
+            return false;
         }
 
         forward.Normalize();
@@ -674,7 +733,137 @@ public class WeaponController : MonoBehaviour
                 halfAngle * Mathf.Deg2Rad
             );
 
-        // 第一遍：为每个 Zombie 选择最接近准星射线的身体 Collider。
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider targetCollider =
+                knifeHitBuffer[i];
+
+            if (targetCollider == null)
+            {
+                continue;
+            }
+
+            float ignoredDeviation;
+
+            Vector3 targetPoint =
+                GetKnifeCandidateHitPoint(
+                    targetCollider,
+                    aimRay,
+                    origin,
+                    knifeAttackRange,
+                    out ignoredDeviation
+                );
+
+            Vector3 delta =
+                targetPoint - origin;
+
+            float distance =
+                delta.magnitude;
+
+            if (distance > knifeAttackRange)
+            {
+                continue;
+            }
+
+            Vector3 direction =
+                distance > 0.0001f
+                    ? delta / distance
+                    : forward;
+
+            if (Vector3.Dot(
+                forward,
+                direction
+            ) < minimumDot)
+            {
+                continue;
+            }
+
+            IDamageable damageable =
+                targetCollider
+                    .GetComponentInParent<
+                        IDamageable
+                    >();
+
+            if (damageable == null)
+            {
+                continue;
+            }
+
+            ZombieController zombie =
+                damageable as ZombieController;
+
+            if (zombie != null &&
+                !zombie.CanTakeDamage)
+            {
+                continue;
+            }
+
+            if (IsKnifePathBlocked(
+                origin,
+                targetPoint,
+                distance
+            ))
+            {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool ApplyKnifeAttackDamage()
+    {
+        knifeTargetCandidates.Clear();
+
+        if (knifeAttackOrigin == null)
+        {
+            Debug.LogError(
+                "Cannot apply knife damage: " +
+                "knifeAttackOrigin is missing!",
+                this
+            );
+
+            return false;
+        }
+
+        if (knifeHitBuffer == null)
+        {
+            ResolveKnifeAttackSettings();
+        }
+
+        Vector3 origin =
+            knifeAttackOrigin.position;
+
+        Vector3 forward =
+            knifeAttackOrigin.forward;
+
+        if (forward.sqrMagnitude < 0.0001f)
+        {
+            return false;
+        }
+
+        forward.Normalize();
+
+        Ray aimRay =
+            new Ray(origin, forward);
+
+        int hitCount =
+            QueryKnifeHitColliders(origin);
+
+        float halfAngle =
+            Mathf.Clamp(
+                knifeAttackAngle,
+                0f,
+                360f
+            ) * 0.5f;
+
+        float minimumDot =
+            Mathf.Cos(
+                halfAngle * Mathf.Deg2Rad
+            );
+
         for (int i = 0; i < hitCount; i++)
         {
             Collider targetCollider =
@@ -785,7 +974,13 @@ public class WeaponController : MonoBehaviour
             }
         }
 
-        // 第二遍：每个 Zombie 只使用最佳 Collider 造成一次伤害。
+        if (knifeTargetCandidates.Count == 0)
+        {
+            return false;
+        }
+
+        bool didApplyDamage = false;
+
         foreach (
             KnifeTargetCandidate candidate in
             knifeTargetCandidates.Values
@@ -808,7 +1003,7 @@ public class WeaponController : MonoBehaviour
                     damage = knifeDamage,
                     hitPart = hitPart,
                     hitPoint = candidate.HitPoint,
-                    souece =
+                    source =
                         DamageSource.KnifeAttack,
                     attacker =
                         playerRoot != null
@@ -819,6 +1014,8 @@ public class WeaponController : MonoBehaviour
             candidate.Damageable.TakeDamage(
                 damageInfo
             );
+
+            didApplyDamage = true;
 
             ZombieEffects hitEffects =
                 candidate.Collider
@@ -836,6 +1033,7 @@ public class WeaponController : MonoBehaviour
         }
 
         knifeTargetCandidates.Clear();
+        return didApplyDamage;
     }
 
     private Vector3 GetKnifeCandidateHitPoint(
@@ -846,8 +1044,6 @@ public class WeaponController : MonoBehaviour
         out float rayDeviationSquared
     )
     {
-        // 如果中心射线直接命中该 Collider，
-        // 使用真实表面交点，并给予最高优先级。
         if (targetCollider.Raycast(
             aimRay,
             out RaycastHit rayHit,
@@ -858,8 +1054,6 @@ public class WeaponController : MonoBehaviour
             return rayHit.point;
         }
 
-        // 没有直接命中时，寻找 Collider 上
-        // 距离摄像机中心射线最近的点。
         Vector3 colliderCenter =
             targetCollider.bounds.center;
 
@@ -1026,9 +1220,30 @@ public class WeaponController : MonoBehaviour
             return;
         }
 
+        if (!weaponWasDisabled &&
+            !hasPlayedKnifeResultSound)
+        {
+            bool didHit;
+
+            if (hasAppliedKnifeDamageThisAttack)
+            {
+                didHit = hasKnifeHitThisAttack;
+            }
+            else
+            {
+                didHit =
+                    HasKnifeAttackTargetInAttackRange();
+            }
+
+            TryPlayKnifeAttackResultSound(didHit);
+        }
+
         isKnifeAttackActive = false;
         hasEnteredKnifeAttackState = false;
         hasAppliedKnifeDamageThisAttack = false;
+
+        hasKnifeHitThisAttack = false;
+        hasPlayedKnifeResultSound = false;
 
         if (playerStamina == null)
         {
@@ -1177,6 +1392,11 @@ public class WeaponController : MonoBehaviour
         knifeDamageWindowEnd =
             Mathf.Clamp01(
                 knifeDamageWindowEnd
+            );
+
+        knifeAttackSoundTime =
+            Mathf.Clamp01(
+                knifeAttackSoundTime
             );
 
         if (knifeDamageWindowEnd <

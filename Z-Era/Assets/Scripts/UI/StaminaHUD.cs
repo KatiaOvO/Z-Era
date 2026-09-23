@@ -153,32 +153,36 @@ public class StaminaHUD : MonoBehaviour
                 maxStamina
             );
 
+        // 先更新低体力状态，以便后续判断
+        UpdateLowStaminaState();
+
         // 第一次收到体力值时直接设置，不播放动画。
         if (!hadInitialStamina)
         {
             SetStaminaTextDirectly(newStaminaValue);
             SetStaminaFillImmediately(newFillAmount);
-            UpdateLowStaminaState();
             UpdateLowStaminaBlink();
             return;
         }
 
-        // 体力减少时播放数字动画。
-        if (isStaminaDecrease)
+        // 低体力闪烁期间，跳过数字动画，避免旧文本闪烁
+        bool shouldSkipAnimation = isLowStamina &&
+                                   currentStamina < lowStaminaThreshold;
+
+        if (isStaminaDecrease || oldStaminaValue != newStaminaValue)
         {
-            BeginStaminaTextAnimation(
-                oldStaminaValue,
-                newStaminaValue,
-                staminaAnimationDuration
-            );
-        }
-        else if (oldStaminaValue != newStaminaValue)
-        {
-            BeginStaminaTextAnimation(
-                oldStaminaValue,
-                newStaminaValue,
-                staminaAnimationDuration
-            );
+            if (shouldSkipAnimation)
+            {
+                SetStaminaTextDirectly(newStaminaValue);
+            }
+            else
+            {
+                BeginStaminaTextAnimation(
+                    oldStaminaValue,
+                    newStaminaValue,
+                    staminaAnimationDuration
+                );
+            }
         }
         else
         {
@@ -190,7 +194,6 @@ public class StaminaHUD : MonoBehaviour
             staminaAnimationDuration
         );
 
-        UpdateLowStaminaState();
         UpdateLowStaminaBlink();
     }
 

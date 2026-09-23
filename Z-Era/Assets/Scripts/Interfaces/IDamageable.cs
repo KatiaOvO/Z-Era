@@ -33,7 +33,7 @@ public struct DamageInfo
     public float damage;           // 基础伤害（来自子弹）
     public HitPart hitPart;       // 击中部位
     public Vector3 hitPoint;       // 击中位置（世界坐标）
-    public DamageSource souece;     // 伤害来源
+    public DamageSource source;     // 伤害来源
     public GameObject attacker;     // 攻击者 
 }
 
