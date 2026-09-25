@@ -56,10 +56,19 @@ public class BulletHandle : MonoBehaviour
             bulletRigidbody.useGravity = false;
         }
 
-        // 没有手动配置图层时，默认检测 Zombie 层
+        // 没有手动配置图层时，默认命中自身层之外的一切表面：
+        // 排除玩家、武器、子弹、UI 和 Ignore Raycast，以及不应被命中的
+        // 僵尸听觉范围触发器；Zombie 层正常受伤，其余表面留下弹孔。
         if (hitLayerMask.value == 0)
         {
-            hitLayerMask = LayerMask.GetMask("Zombie");
+            hitLayerMask = ~LayerMask.GetMask(
+                "Player",
+                "Weapon",
+                "Bullet",
+                "UI",
+                "IgnoreRaycast",
+                "ZombieHearing"
+            );
         }
 
         // 仅用于测试，确认图层配置无误后可以删除
@@ -167,6 +176,15 @@ public class BulletHandle : MonoBehaviour
         if (zombieEffects != null)
         {
             zombieEffects.PlayHitEffect(hitPoint, hitNormal);
+        }
+        else
+        {
+            // 非 Zombie 表面不造成伤害，在命中点留下弹孔贴花。
+            BulletHoleManager.Spawn(
+                hitPoint,
+                hitNormal,
+                hitCollider.transform
+            );
         }
 
         RecycleBullet();

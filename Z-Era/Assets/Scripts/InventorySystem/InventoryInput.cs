@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using Migration.UI;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.Serialization;
 
 public class InventoryInput : MonoBehaviour
@@ -17,6 +19,10 @@ public class InventoryInput : MonoBehaviour
 
     [Tooltip("打开背包时显示的全屏背景 Canvas 或 Image")]
     public GameObject inventoryBackground;
+
+    [Tooltip("背景 Image 上的溶解组件，打开背包时播放 1→0 的显示溶解；留空则背景直接显示")]
+    [SerializeField]
+    private UIDissolveImage backgroundDissolve;
 
     [Tooltip("打开背包时需要隐藏的 HUD Canvas")]
     public GameObject hudCanvas;
@@ -40,9 +46,9 @@ public class InventoryInput : MonoBehaviour
 
     private Camera inventoryMainCamera;
     private int previousMainCameraCullingMask;
-    private CameraClearFlags previousMainCameraClearFlags;
-    private Color previousMainCameraBackgroundColor;
     private bool hasPreviousMainCameraState;
+
+    private Camera inventoryUICamera;
 
     private class InventoryLayerState
     {
@@ -152,11 +158,50 @@ public class InventoryInput : MonoBehaviour
 
         inventoryContainer.SetActive(true);
 
+        // 先准备相机，ConfigureBackgroundLayout 需要把 Canvas 指向叠加相机。
+        PrepareMainCameraForInventory();
+
         if (inventoryBackground != null)
         {
             inventoryBackground.SetActive(true);
             ConfigureBackgroundLayout();
             Canvas.ForceUpdateCanvases();
+
+            if (backgroundDissolve != null)
+            {
+                // 上一次关闭时 Location 停在 0，先归位到 1 再播放，
+                // 保证每次打开背包都有完整的 1→0 溶解。
+                backgroundDissolve.SetLocation(1f);
+                backgroundDissolve.Show();
+
+                // 同一 Canvas 下的其他溶解元素（图标、描述文本等）一起播放，
+                // 新增带 UIDissolveImage 的子物体无需改代码即自动加入。
+                Canvas dissolveCanvas =
+                    backgroundDissolve.graphic != null
+                        ? backgroundDissolve.graphic.canvas
+                        : null;
+
+                if (dissolveCanvas != null)
+                {
+                    foreach (
+                        IUIDissolveEffect dissolve in
+                            dissolveCanvas.GetComponentsInChildren<
+                                IUIDissolveEffect
+                            >(true)
+                    )
+                    {
+                        // 背景已在上面单独驱动，这里处理其余元素。
+                        if (dissolve is UIDissolveImage image &&
+                            image == backgroundDissolve)
+                        {
+                            continue;
+                        }
+
+                        dissolve.SetLocation(1f);
+                        dissolve.Show();
+                    }
+                }
+            }
         }
 
         if (hudCanvas != null)
@@ -164,7 +209,6 @@ public class InventoryInput : MonoBehaviour
             hudCanvas.SetActive(false);
         }
 
-        PrepareMainCameraForInventory();
         SetInventoryLayer(true);
 
         isOpen = true;
@@ -172,7 +216,7 @@ public class InventoryInput : MonoBehaviour
 
     private void CloseInventory()
     {
-        // 先关闭容器，再统一恢复所有临时状态。
+        // 先关闭容器，再统一恢复所有临时状态；背景随 Inventory Canvas 直接禁用。
         if (inventoryContainer != null)
         {
             inventoryContainer.SetActive(false);
@@ -303,7 +347,8 @@ public class InventoryInput : MonoBehaviour
 
     private void PrepareMainCameraForInventory()
     {
-        // 临时只渲染 UI 和背包层，避免场景物体遮挡背景。
+        // 主相机不再渲染 UI 层；UI 改由叠加相机绘制，
+        // 溶解期间透出的就是正常场景画面而不是黑屏。
         inventoryMainCamera = Camera.main;
 
         if (inventoryMainCamera == null)
@@ -321,12 +366,6 @@ public class InventoryInput : MonoBehaviour
             previousMainCameraCullingMask =
                 inventoryMainCamera.cullingMask;
 
-            previousMainCameraClearFlags =
-                inventoryMainCamera.clearFlags;
-
-            previousMainCameraBackgroundColor =
-                inventoryMainCamera.backgroundColor;
-
             hasPreviousMainCameraState = true;
         }
 
@@ -343,20 +382,79 @@ public class InventoryInput : MonoBehaviour
             return;
         }
 
-        // 只渲染UI和背包道具，避免近处场景遮挡背景。
-        inventoryMainCamera.cullingMask =
-            1 << uiLayer;
+        inventoryMainCamera.cullingMask &=
+            ~(1 << uiLayer);
 
-        inventoryMainCamera.clearFlags =
-            CameraClearFlags.SolidColor;
+        PrepareInventoryUICamera(uiLayer);
+    }
 
-        inventoryMainCamera.backgroundColor =
-            Color.black;
+    private void PrepareInventoryUICamera(int uiLayer)
+    {
+        // 叠加相机只渲染 UI 层并在叠加时清除深度，
+        // 背景和道具永远画在场景之前，近处地面无法再遮挡背景。
+        if (inventoryUICamera == null)
+        {
+            GameObject uiCameraObject =
+                new GameObject("Inventory UI Camera");
+
+            uiCameraObject.transform.SetParent(
+                inventoryMainCamera.transform,
+                false
+            );
+
+            inventoryUICamera =
+                uiCameraObject.AddComponent<Camera>();
+
+            inventoryUICamera.enabled = false;
+            inventoryUICamera.cullingMask = 1 << uiLayer;
+            inventoryUICamera.useOcclusionCulling = false;
+
+            UniversalAdditionalCameraData uiCameraData =
+                inventoryUICamera.GetUniversalAdditionalCameraData();
+
+            uiCameraData.renderType = CameraRenderType.Overlay;
+        }
+
+        // 与主相机保持一致的视角参数，Canvas 才能精确铺满画面。
+        inventoryUICamera.fieldOfView =
+            inventoryMainCamera.fieldOfView;
+
+        inventoryUICamera.nearClipPlane =
+            inventoryMainCamera.nearClipPlane;
+
+        inventoryUICamera.farClipPlane =
+            inventoryMainCamera.farClipPlane;
+
+        inventoryUICamera.enabled = true;
+
+        UniversalAdditionalCameraData mainCameraData =
+            inventoryMainCamera.GetUniversalAdditionalCameraData();
+
+        if (!mainCameraData.cameraStack.Contains(inventoryUICamera))
+        {
+            mainCameraData.cameraStack.Add(inventoryUICamera);
+        }
     }
 
     private void RestoreMainCameraRendering()
     {
-        // 恢复 Main Camera 原始裁剪、清屏和背景颜色。
+        // 恢复 Main Camera 原始裁剪，并停用背包 UI 叠加相机。
+        if (inventoryUICamera != null)
+        {
+            inventoryUICamera.enabled = false;
+
+            if (inventoryMainCamera != null)
+            {
+                UniversalAdditionalCameraData mainCameraData =
+                    inventoryMainCamera.GetUniversalAdditionalCameraData();
+
+                if (mainCameraData.cameraStack.Contains(inventoryUICamera))
+                {
+                    mainCameraData.cameraStack.Remove(inventoryUICamera);
+                }
+            }
+        }
+
         if (!hasPreviousMainCameraState)
         {
             return;
@@ -366,12 +464,6 @@ public class InventoryInput : MonoBehaviour
         {
             inventoryMainCamera.cullingMask =
                 previousMainCameraCullingMask;
-
-            inventoryMainCamera.clearFlags =
-                previousMainCameraClearFlags;
-
-            inventoryMainCamera.backgroundColor =
-                previousMainCameraBackgroundColor;
         }
 
         hasPreviousMainCameraState = false;
@@ -546,8 +638,11 @@ public class InventoryInput : MonoBehaviour
             canvas.renderMode =
                 RenderMode.ScreenSpaceCamera;
 
+            // Canvas 必须挂在叠加相机上，主相机已不渲染 UI 层。
             Camera inventoryCamera =
-                Camera.main;
+                inventoryUICamera != null
+                    ? inventoryUICamera
+                    : Camera.main;
 
             if (inventoryCamera != null)
             {

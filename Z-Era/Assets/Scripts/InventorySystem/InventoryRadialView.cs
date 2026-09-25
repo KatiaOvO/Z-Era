@@ -4,6 +4,32 @@ using UnityEngine;
 
 public class InventoryRadialView : MonoBehaviour
 {
+    // 道具临时使用的渲染队列，需要排在 Canvas(3000) 之后，
+    // 保证道具绘制在溶解背景之上；关闭背包时还原原队列。
+    private const int ItemOverlayRenderQueue = 3200;
+
+    // 只有一个道具时圆盘允许左右摆动的最大角度，不暴露到 Inspector。
+    private const float SingleItemSwingAngle = 15f;
+
+    // 背包展示期间使用的无光照 Shader，避免场景灯光影响道具显示。
+    private static Shader itemUnlitShader;
+
+    private static Shader ItemUnlitShader
+    {
+        get
+        {
+            if (itemUnlitShader == null)
+            {
+                itemUnlitShader =
+                    Shader.Find(
+                        "Universal Render Pipeline/Unlit"
+                    );
+            }
+
+            return itemUnlitShader;
+        }
+    }
+
     [Serializable]
     public class InventoryItem
     {
@@ -31,6 +57,8 @@ public class InventoryRadialView : MonoBehaviour
         public Quaternion LastAppliedLocalRotation;
         public Vector3 LastAppliedLocalScale;
         public bool OriginalActiveSelf;
+        public Renderer[] Renderers;
+        public Material[][] OriginalMaterials;
         public Collider[] Colliders;
         public bool[] ColliderEnabled;
         public Rigidbody[] Rigidbodies;
@@ -111,8 +139,26 @@ public class InventoryRadialView : MonoBehaviour
     [Tooltip("移动距离小于该值时视为点击，否则视为拖动")]
     [Min(0f)] public float dragClickThresholdPixels = 8f;
 
+    [Header("开场动画")]
+    [Tooltip("开启后道具起始位置自动放到画面下方之外，距离按摄像机视场计算；关闭则使用下方手动距离")]
+    public bool introStartOffScreen = true;
+
+    [Tooltip("introStartOffScreen 关闭时，道具从下方移入的距离")]
+    [Min(0f)] public float introDropDistance = 0.35f;
+
+    [Tooltip("道具移入动画的时长，单位为秒，使用先快后慢的缓出曲线")]
+    [Min(0f)] public float introDuration = 0.5f;
+
     private InventoryItem[] runtimeItems;
     private ItemRuntimeState[] itemStates;
+
+    private bool isIntroActive;
+    private float introElapsedTime;
+    private float introDropDistanceRuntime;
+
+    // 选中道具变化时触发：参数为道具索引与道具根节点，
+    // 供描述文本等外部展示系统订阅。
+    public event Action<int, Transform> SelectionChanged;
 
     private bool isDragging;
     private bool isInertiaActive;
@@ -166,6 +212,10 @@ public class InventoryRadialView : MonoBehaviour
         RefreshRuntimeItems();
         CaptureAndPrepareItems();
         ResetDiskState();
+        StartIntroAnimation();
+
+        // 通知外部当前选中项，打开背包时描述文本才有初始内容。
+        NotifySelectionChanged();
     }
 
     private void OnDisable()
@@ -198,8 +248,50 @@ public class InventoryRadialView : MonoBehaviour
             }
         }
 
+        // 移入动画播放期间禁止旋转和点击，动画结束后才允许交互。
+        if (isIntroActive)
+        {
+            introElapsedTime += Time.unscaledDeltaTime;
+
+            if (introElapsedTime >= introDuration)
+            {
+                isIntroActive = false;
+            }
+
+            return;
+        }
+
         HandleMouseInput();
         UpdateRotation(Time.unscaledDeltaTime);
+    }
+
+    private void StartIntroAnimation()
+    {
+        // 默认根据摄像机视场计算移入距离，保证道具起始点完全在画面下缘之外：
+        // 圆盘距离处的半屏高 + 圆环半径，再加少量余量。
+        float dropDistance = introDropDistance;
+
+        if (introStartOffScreen && mainCamera != null)
+        {
+            float halfFovRadians =
+                mainCamera.fieldOfView * 0.5f * Mathf.Deg2Rad;
+
+            float halfScreenHeight =
+                Mathf.Tan(halfFovRadians) * viewDistance;
+
+            dropDistance =
+                halfScreenHeight + ringRadius + 0.25f;
+        }
+
+        // 每次打开背包都重新播移入动画；没有道具或时长为 0 时直接跳过。
+        isIntroActive =
+            dropDistance > 0f &&
+            introDuration > 0f &&
+            runtimeItems != null &&
+            runtimeItems.Length > 0;
+
+        introDropDistanceRuntime = dropDistance;
+        introElapsedTime = 0f;
     }
 
     private void LateUpdate()
@@ -298,6 +390,88 @@ public class InventoryRadialView : MonoBehaviour
                 OriginalLocalScale = item.localScale,
                 OriginalActiveSelf = item.gameObject.activeSelf
             };
+
+            // 实例化材质并把渲染队列提到 Canvas 之后，
+            // 道具才能绘制在溶解背景之上；关闭时还原。
+            state.Renderers =
+                item.GetComponentsInChildren<Renderer>(true);
+
+            state.OriginalMaterials =
+                new Material[state.Renderers.Length][];
+
+            for (int r = 0; r < state.Renderers.Length; r++)
+            {
+                Renderer itemRenderer = state.Renderers[r];
+
+                if (itemRenderer == null)
+                {
+                    continue;
+                }
+
+                state.OriginalMaterials[r] =
+                    itemRenderer.sharedMaterials;
+
+                Material[] instanceMaterials =
+                    itemRenderer.materials;
+
+                foreach (
+                    Material itemMaterial in
+                        instanceMaterials
+                )
+                {
+                    if (itemMaterial == null)
+                    {
+                        continue;
+                    }
+
+                    // 先保存贴图与颜色再换 Unlit Shader：
+                    // URP Lit 与 URP Unlit 属性同名会自动保留，
+                    // 其他 Shader 则手动搬运，避免道具变成纯白。
+                    if (ItemUnlitShader != null)
+                    {
+                        Texture baseMap =
+                            itemMaterial.HasProperty("_BaseMap")
+                                ? itemMaterial.GetTexture("_BaseMap")
+                                : null;
+
+                        if (baseMap == null &&
+                            itemMaterial.HasProperty("_MainTex"))
+                        {
+                            baseMap =
+                                itemMaterial.GetTexture("_MainTex");
+                        }
+
+                        Color baseColor =
+                            itemMaterial.HasProperty("_BaseColor")
+                                ? itemMaterial.GetColor("_BaseColor")
+                                : Color.white;
+
+                        itemMaterial.shader = ItemUnlitShader;
+
+                        if (baseMap != null &&
+                            itemMaterial.HasProperty("_BaseMap"))
+                        {
+                            itemMaterial.SetTexture(
+                                "_BaseMap",
+                                baseMap
+                            );
+                        }
+
+                        if (itemMaterial.HasProperty("_BaseColor"))
+                        {
+                            itemMaterial.SetColor(
+                                "_BaseColor",
+                                baseColor
+                            );
+                        }
+                    }
+
+                    itemMaterial.renderQueue =
+                        ItemOverlayRenderQueue;
+                }
+
+                itemRenderer.materials = instanceMaterials;
+            }
 
             state.Colliders = item.GetComponentsInChildren<Collider>(true);
             state.ColliderEnabled = new bool[state.Colliders.Length];
@@ -414,11 +588,34 @@ public class InventoryRadialView : MonoBehaviour
                 continue;
             }
 
+            RestoreItemMaterials(state);
             RestoreItemPhysics(state);
             state.Item.localPosition = state.OriginalLocalPosition;
             state.Item.localRotation = state.OriginalLocalRotation;
             state.Item.localScale = state.OriginalLocalScale;
             state.Item.gameObject.SetActive(state.OriginalActiveSelf);
+        }
+    }
+
+    private void RestoreItemMaterials(ItemRuntimeState state)
+    {
+        // 还原原始共享材质，丢弃背包期间实例化的高队列副本。
+        if (state.Renderers == null ||
+            state.OriginalMaterials == null)
+        {
+            return;
+        }
+
+        for (int r = 0; r < state.Renderers.Length; r++)
+        {
+            Renderer itemRenderer = state.Renderers[r];
+
+            if (itemRenderer != null &&
+                state.OriginalMaterials[r] != null)
+            {
+                itemRenderer.sharedMaterials =
+                    state.OriginalMaterials[r];
+            }
         }
     }
 
@@ -528,6 +725,18 @@ public class InventoryRadialView : MonoBehaviour
 
             targetDiskRotation += rotationDelta;
 
+            // 只有一个道具时不允许绕圈，仅在基础角度左右小幅度摆动。
+            if (runtimeItems != null && runtimeItems.Length == 1)
+            {
+                float baseRotation = GetDesiredRotation(0);
+
+                targetDiskRotation = Mathf.Clamp(
+                    targetDiskRotation,
+                    baseRotation - SingleItemSwingAngle,
+                    baseRotation + SingleItemSwingAngle
+                );
+            }
+
             float instantaneousSpeed =
                 rotationDelta / deltaTime;
 
@@ -570,7 +779,12 @@ public class InventoryRadialView : MonoBehaviour
                 }
             }
 
-            if (Mathf.Abs(dragAngularVelocity) >= inertiaMinimumSpeed)
+            if (runtimeItems != null && runtimeItems.Length == 1)
+            {
+                // 单个道具时禁用惯性，松手直接回到基础角度。
+                SnapToNearestSelection();
+            }
+            else if (Mathf.Abs(dragAngularVelocity) >= inertiaMinimumSpeed)
             {
                 isInertiaActive = true;
             }
@@ -685,6 +899,32 @@ public class InventoryRadialView : MonoBehaviour
         previousSelectionIndex = currentSelectionIndex;
         currentSelectionIndex = newIndex;
         selectionBlend = 0f;
+
+        NotifySelectionChanged();
+    }
+
+    public Transform GetSelectedItemTransform()
+    {
+        if (runtimeItems == null ||
+            runtimeItems.Length == 0 ||
+            currentSelectionIndex < 0 ||
+            currentSelectionIndex >= runtimeItems.Length)
+        {
+            return null;
+        }
+
+        InventoryItem entry =
+            runtimeItems[currentSelectionIndex];
+
+        return entry != null ? entry.item : null;
+    }
+
+    private void NotifySelectionChanged()
+    {
+        SelectionChanged?.Invoke(
+            currentSelectionIndex,
+            GetSelectedItemTransform()
+        );
     }
 
     private void UpdateRotation(float deltaTime)
@@ -836,6 +1076,31 @@ public class InventoryRadialView : MonoBehaviour
         int itemCount = itemStates.Length;
         float step = 360f / itemCount;
 
+        // 移入动画：沿摄像机屏幕正下方生成偏移，随缓出曲线衰减到 0。
+        // 使用摄像机 up 的反方向而不是容器局部 Y，避免倾斜容器把
+        // 偏移带进深度分量，看起来像道具由远及近。
+        Vector3 introOffset = Vector3.zero;
+
+        if (isIntroActive)
+        {
+            float introProgress =
+                Mathf.Clamp01(
+                    introElapsedTime /
+                    Mathf.Max(0.0001f, introDuration)
+                );
+
+            // easeOutCubic：起步流畅、结尾平滑减速，避免急起急停的生硬感。
+            float easedProgress =
+                1f - Mathf.Pow(1f - introProgress, 3f);
+
+            Vector3 worldOffset =
+                -mainCamera.transform.up *
+                (introDropDistanceRuntime * (1f - easedProgress));
+
+            introOffset =
+                transform.InverseTransformDirection(worldOffset);
+        }
+
         Vector3 towardCameraLocal =
             transform.InverseTransformDirection(
                 -mainCamera.transform.forward
@@ -898,7 +1163,7 @@ public class InventoryRadialView : MonoBehaviour
                     ringPosition,
                     selectedPosition,
                     selectionWeight
-                );
+                ) + introOffset;
 
             // 保持道具相对摄像机的朝向，同时允许单独配置旋转偏移。
             state.Item.rotation =

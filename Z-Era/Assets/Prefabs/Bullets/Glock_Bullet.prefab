@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: -2073821006713344524}
   - component: {fileID: 1917113912057455561}
   - component: {fileID: -8880556014372776562}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Glock_Bullet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
