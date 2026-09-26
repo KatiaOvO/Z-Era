@@ -31,6 +31,31 @@ public class InventoryInput : MonoBehaviour
     [Min(0.1f)]
     public float backgroundPlaneDistance = 3f;
 
+    [Header("背包音效")]
+
+    [Tooltip("打开背包时播放的音效，留空则不播放")]
+    [SerializeField]
+    private AudioClip openSound;
+
+    [Tooltip("关闭背包时播放的音效，留空则不播放")]
+    [SerializeField]
+    private AudioClip closeSound;
+
+    [Tooltip("背包音效音量")]
+    [Range(0f, 1f)]
+    [SerializeField]
+    private float inventorySoundVolume = 1f;
+
+    [Header("关闭限制")]
+
+    [Tooltip("开启后，需等待背包 UI 溶解动画全部播完才能按 B 或 Esc 关闭背包")]
+    [SerializeField]
+    private bool requireDissolveBeforeClose = true;
+
+    [Tooltip("关闭背包的备用按键 Esc，仅在背包打开时生效")]
+    [SerializeField]
+    private bool allowEscapeToClose = true;
+
     [Header("暂停游戏")]
 
     [Tooltip("打开背包时写入的 Time.timeScale，0 表示暂停")]
@@ -62,6 +87,48 @@ public class InventoryInput : MonoBehaviour
 
     private bool isOpen;
 
+    // 打开背包时收集的溶解元素，用于判断"溶解加载完成"。
+    private readonly List<IUIDissolveEffect>
+        dissolveElements = new List<IUIDissolveEffect>();
+
+    private bool waitingForDissolve;
+
+    private AudioSource inventoryAudioSource;
+
+    private void Awake()
+    {
+        // 两个音效都未配置时不创建 AudioSource。
+        if (openSound == null && closeSound == null)
+        {
+            return;
+        }
+
+        // 代码自动创建专属 AudioSource，无需在场景中手动添加；
+        // 也不能复用玩家脚步声的源，会被 PlayerController 的 Stop() 掐断。
+        inventoryAudioSource = gameObject.AddComponent<AudioSource>();
+        inventoryAudioSource.playOnAwake = false;
+        inventoryAudioSource.spatialBlend = 0f;
+
+        // 打开背包会设置 AudioListener.pause 全局暂停声音，
+        // 但打开音效恰恰是在暂停生效的同一帧排入播放计划的，
+        // 会被冻结到关闭背包才解冻播出。
+        // 标记为忽略全局暂停，UI 音效在暂停期间照常发声。
+        inventoryAudioSource.ignoreListenerPause = true;
+    }
+
+    private void PlayInventorySound(AudioClip clip)
+    {
+        if (clip == null || inventoryAudioSource == null)
+        {
+            return;
+        }
+
+        inventoryAudioSource.PlayOneShot(
+            clip,
+            inventorySoundVolume
+        );
+    }
+
     private CursorLockMode previousCursorLockState;
     private bool previousCursorVisible;
     private bool hasPreviousCursorState;
@@ -83,9 +150,15 @@ public class InventoryInput : MonoBehaviour
     private void Update()
     {
         // InventoryInput 始终保持启用，负责监听开关和恢复异常关闭状态。
-        if (Input.GetKeyDown(toggleKey))
+        // 背包打开期间 Esc 也可关闭；溶解未完成时关闭输入被忽略。
+        if (Input.GetKeyDown(toggleKey) ||
+            (isOpen && allowEscapeToClose &&
+                Input.GetKeyDown(KeyCode.Escape)))
         {
-            SetInventoryOpen(!isOpen);
+            if (!isOpen || CanCloseInventory())
+            {
+                SetInventoryOpen(!isOpen);
+            }
         }
 
         // 如果背包被其他脚本关闭，恢复游戏状态。
@@ -141,6 +214,10 @@ public class InventoryInput : MonoBehaviour
 
     private void OpenInventory()
     {
+        // 打开音效必须在 AudioListener.pause 之前播放，
+        // 否则会被下面的全局声音暂停吞掉。
+        PlayInventorySound(openSound);
+
         // 顺序很重要：先保存状态，再暂停游戏、显示背景和启用容器。
         StorePauseState();
         StoreBackgroundState();
@@ -169,6 +246,11 @@ public class InventoryInput : MonoBehaviour
 
             if (backgroundDissolve != null)
             {
+                // 收集本次打开涉及的所有溶解元素，
+                // 关闭限制需要等它们全部播放完毕。
+                dissolveElements.Clear();
+                dissolveElements.Add(backgroundDissolve);
+
                 // 上一次关闭时 Location 停在 0，先归位到 1 再播放，
                 // 保证每次打开背包都有完整的 1→0 溶解。
                 backgroundDissolve.SetLocation(1f);
@@ -199,8 +281,15 @@ public class InventoryInput : MonoBehaviour
 
                         dissolve.SetLocation(1f);
                         dissolve.Show();
+
+                        dissolveElements.Add(dissolve);
                     }
                 }
+
+                // 未启用限制、或没有任何溶解元素时不拦截关闭。
+                waitingForDissolve =
+                    requireDissolveBeforeClose &&
+                    dissolveElements.Count > 0;
             }
         }
 
@@ -247,6 +336,47 @@ public class InventoryInput : MonoBehaviour
         RestoreMainCameraRendering();
         RestoreGameplayControls();
         RestoreCursor();
+
+        // 背包已关闭，溶解等待状态与元素引用一并清空。
+        dissolveElements.Clear();
+        waitingForDissolve = false;
+
+        // 关闭音效放在 RestorePauseState 之后：
+        // 此时 AudioListener.pause 已恢复，声音不会被吞掉。
+        PlayInventorySound(closeSound);
+    }
+
+    // 关闭背包前的放行判断：溶解动画全部播完（或未启用限制）才允许关闭。
+    private bool CanCloseInventory()
+    {
+        if (!waitingForDissolve)
+        {
+            return true;
+        }
+
+        foreach (
+            IUIDissolveEffect dissolve in dissolveElements
+        )
+        {
+            // 元素失效或所在物体未激活时不参与等待，
+            // 避免动画永远播不完导致背包关不掉。
+            Component component = dissolve as Component;
+
+            if (dissolve == null ||
+                component == null ||
+                !component.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (!dissolve.isShowComplete)
+            {
+                return false;
+            }
+        }
+
+        waitingForDissolve = false;
+        return true;
     }
 
     private void StorePauseState()

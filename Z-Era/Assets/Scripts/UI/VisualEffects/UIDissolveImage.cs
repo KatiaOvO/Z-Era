@@ -11,6 +11,10 @@ namespace Migration.UI
         void SetLocation(float location);
 
         void Show();
+
+        // Show() 动画是否已完成且元素完全显示，
+        // 供背包等系统判断"溶解加载完成"。
+        bool isShowComplete { get; }
     }
 
     [ExecuteAlways]
@@ -116,6 +120,11 @@ namespace Migration.UI
         public ColorMode colorMode { get { return m_ColorMode; } }
         public bool isAnimating { get { return m_IsAnimating; } }
         public bool isVisible { get { return m_Location <= 0.001f; } }
+
+        public bool isShowComplete
+        {
+            get { return !m_IsAnimating && m_Location <= 0.001f; }
+        }
 
         protected override void OnEnable()
         {

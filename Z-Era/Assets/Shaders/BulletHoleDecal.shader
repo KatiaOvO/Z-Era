@@ -9,8 +9,8 @@ Shader "Custom/BulletHoleDecal"
     {
         Tags
         {
-            "Queue" = "Transparent+1"
-            "RenderType" = "Transparent"
+            "Queue" = "AlphaTest"
+            "RenderType" = "TransparentCutout"
             "IgnoreProjector" = "True"
             "RenderPipeline" = "UniversalPipeline"
             "PreviewType" = "Plane"
@@ -21,7 +21,7 @@ Shader "Custom/BulletHoleDecal"
             Name "Decal"
 
             Cull Off
-            ZWrite Off
+            ZWrite On
             Blend SrcAlpha OneMinusSrcAlpha
 
             HLSLPROGRAM
@@ -59,7 +59,13 @@ Shader "Custom/BulletHoleDecal"
 
             half4 frag(Varyings IN) : SV_Target
             {
-                return SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv);
+                half4 col = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv);
+
+                // 裁掉接近全透明的像素，避免 ZWrite On 时
+                // 弹孔的空白边缘在深度上挡住后面的物体。
+                clip(col.a - 0.05);
+
+                return col;
             }
             ENDHLSL
         }

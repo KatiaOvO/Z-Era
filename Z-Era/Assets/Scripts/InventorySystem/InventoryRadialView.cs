@@ -149,6 +149,21 @@ public class InventoryRadialView : MonoBehaviour
     [Tooltip("道具移入动画的时长，单位为秒，使用先快后慢的缓出曲线")]
     [Min(0f)] public float introDuration = 0.5f;
 
+    [Header("转动音效")]
+    [Tooltip("选中项每移动一个道具时播放的齿轮声，留空则不播放")]
+    [SerializeField]
+    private AudioClip rotationTickSound;
+
+    [Tooltip("齿轮声音量")]
+    [Range(0f, 1f)]
+    [SerializeField]
+    private float rotationTickVolume = 1f;
+
+    [Tooltip("齿轮声音调随机浮动幅度（0~0.5），轻微变化让连续转动更自然")]
+    [Range(0f, 0.5f)]
+    [SerializeField]
+    private float rotationTickPitchVariation = 0.05f;
+
     private InventoryItem[] runtimeItems;
     private ItemRuntimeState[] itemStates;
 
@@ -179,6 +194,45 @@ public class InventoryRadialView : MonoBehaviour
     private Vector3 originalContainerLocalPosition;
     private Quaternion originalContainerLocalRotation;
     private Vector3 originalContainerLocalScale;
+
+    private AudioSource tickAudioSource;
+
+    private void Awake()
+    {
+        if (rotationTickSound == null)
+        {
+            return;
+        }
+
+        // 专属 AudioSource，代码自动创建，无需在场景中手动添加。
+        // 打开背包时 AudioListener.pause = true，转动发生在暂停期间，
+        // 必须忽略全局暂停才能发声。
+        tickAudioSource = gameObject.AddComponent<AudioSource>();
+        tickAudioSource.playOnAwake = false;
+        tickAudioSource.spatialBlend = 0f;
+        tickAudioSource.ignoreListenerPause = true;
+    }
+
+    private void PlayRotationTick()
+    {
+        if (rotationTickSound == null || tickAudioSource == null)
+        {
+            return;
+        }
+
+        // 每次轻微随机音调，连续转动时听起来更像真实齿轮而非复读。
+        // 文件顶部 using System 与 UnityEngine 的 Random 重名，需全限定。
+        tickAudioSource.pitch =
+            1f + UnityEngine.Random.Range(
+                -rotationTickPitchVariation,
+                rotationTickPitchVariation
+            );
+
+        tickAudioSource.PlayOneShot(
+            rotationTickSound,
+            rotationTickVolume
+        );
+    }
 
     private void OnEnable()
     {
@@ -899,6 +953,9 @@ public class InventoryRadialView : MonoBehaviour
         previousSelectionIndex = currentSelectionIndex;
         currentSelectionIndex = newIndex;
         selectionBlend = 0f;
+
+        // 选中项每前进一个道具响一声齿轮，拖动、惯性、点击共用此入口。
+        PlayRotationTick();
 
         NotifySelectionChanged();
     }

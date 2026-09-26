@@ -32,6 +32,11 @@ namespace Migration.UI
         private float location = 1f;
         private float targetLocation;
 
+        public bool isShowComplete
+        {
+            get { return !isAnimating && location <= 0.001f; }
+        }
+
         public void SetLocation(float value)
         {
             location = Mathf.Clamp01(value);

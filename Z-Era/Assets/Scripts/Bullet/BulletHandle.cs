@@ -10,7 +10,7 @@ public class BulletHandle : MonoBehaviour
     // 子弹命中检测使用的图层。
     // 默认只检测 Zombie 层，避免射线打到玩家、武器、场景等无关碰撞体。
     [SerializeField]
-    [Tooltip("射线检测的图层，留空则默认使用 Zombie 层")]
+    [Tooltip("射线检测的图层，留空则默认检测除 Player/Weapon/Bullet/UI/Ignore Raycast/ZombieHearing 外的所有表面")]
     private LayerMask hitLayerMask;
 
     // 预留的子弹扫描半径。
@@ -66,7 +66,7 @@ public class BulletHandle : MonoBehaviour
                 "Weapon",
                 "Bullet",
                 "UI",
-                "IgnoreRaycast",
+                "Ignore Raycast",
                 "ZombieHearing"
             );
         }

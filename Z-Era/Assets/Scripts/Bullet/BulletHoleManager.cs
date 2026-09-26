@@ -33,6 +33,13 @@ public class BulletHoleManager : MonoBehaviour
     private Material holeMaterial;
     private readonly Queue<BulletHole> liveHoles = new Queue<BulletHole>();
 
+    // 重合弹孔的深度分层：每个弹孔沿法线额外偏移一小步，
+    // 保证后打的弹孔深度更近、稳定地盖住先打的，避免排序抖动闪烁。
+    private const float DepthStep = 0.001f;
+    private const int DepthLayerCount = 16;
+
+    private int holeDepthIndex;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -57,7 +64,9 @@ public class BulletHoleManager : MonoBehaviour
         }
 
         holeMaterial = new Material(decalShader);
-        holeMaterial.mainTexture = bulletHoleTexture;
+        // BulletHoleDecal.shader 的贴图属性是 _BaseMap，
+        // mainTexture 只对 _MainTex 生效，必须按名字赋值。
+        holeMaterial.SetTexture("_BaseMap", bulletHoleTexture);
     }
 
     // 由 BulletHandle 在命中非 Zombie 表面时调用。
@@ -101,17 +110,41 @@ public class BulletHoleManager : MonoBehaviour
 
         // 先在世界空间摆好位置和朝向（法线朝外 + 随机滚动角度），
         // 再挂到被击物体上跟随移动。
+        // Quad 的正面朝向是局部 Z 轴，面内随机滚动必须绕局部 Z 转；
+        // 绕其他轴会让 Quad 斜插进表面，被深度测试裁成变形的碎片。
         Quaternion rotation =
             Quaternion.LookRotation(normal) *
-            Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+            Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
 
         hole.transform.SetPositionAndRotation(
-            position + normal * surfaceOffset,
+            position + normal * (surfaceOffset + (holeDepthIndex++ % DepthLayerCount) * DepthStep),
             rotation
         );
 
         hole.transform.localScale = Vector3.one * holeSize;
-        hole.transform.SetParent(surface, true);
+
+        // 父物体缩放不均匀且有旋转时，SetParent 无法精确补偿，
+        // 贴花会被剪切变形（正方形变椭圆/平行四边形）。
+        // 这种表面把弹孔挂在管理器节点下（单位缩放），不跟随移动。
+        Vector3 surfaceScale = surface.lossyScale;
+        float maxAxis = Mathf.Max(
+            Mathf.Abs(surfaceScale.x),
+            Mathf.Abs(surfaceScale.y),
+            Mathf.Abs(surfaceScale.z)
+        );
+        float minAxis = Mathf.Min(
+            Mathf.Abs(surfaceScale.x),
+            Mathf.Abs(surfaceScale.y),
+            Mathf.Abs(surfaceScale.z)
+        );
+
+        bool surfaceScaleUniform =
+            minAxis > 0f && maxAxis / minAxis <= 1.02f;
+
+        hole.transform.SetParent(
+            surfaceScaleUniform ? surface : transform,
+            true
+        );
 
         BulletHole bulletHole = hole.AddComponent<BulletHole>();
         bulletHole.Init(holeLifeTime);
