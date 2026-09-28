@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99bd3cb82ac25b64bb8347d92bafc97d, type: 3}
+  m_Name: pr_dia_harper_01_tk01_start
+  m_EditorClassIdentifier: 
+  startNodeId: harper_01
+  nodes:
+  - nodeId: harper_01
+    speakerName: "\uFF1F\uFF1F\uFF1F"
+    speakerColor: {r: 1, g: 1, b: 1, a: 0}
+    portrait: {fileID: 0}
+    text: "\u4F60\u597D\uFF0C\u65B0\u5175"
+    choices:
+    - buttonText: "\u60A8\u597D\uFF0C\u957F\u5B98\u3002"
+      requiredFlags: []
+      forbiddenFlags: []
+      nextNodeId: 
+      onSelected:
+        m_PersistentCalls:
+          m_Calls: []
+  - nodeId: harper_02
+    speakerName: "\uFF1F\uFF1F\uFF1F"
+    speakerColor: {r: 1, g: 1, b: 1, a: 0}
+    portrait: {fileID: 0}
+    text: "\u606D\u559C\u4F60\u901A\u8FC7\u5C42\u5C42\u7B5B\u9009\u4E0E\u7ADE\u4E89\uFF0C\u6700\u7EC8\u8FDB\u5165\u4E86\u8054\u90A6\u519B\u961F\u3002\u52A0\u5165\u8054\u90A6\u519B\u961F\u662F\u4E00\u4EF6\u5341\u5206\u56F0\u96BE\u540C\u65F6\u4E5F\u662F\u4E00\u4EF6\u5341\u5206\u5149\u8363\u7684\u4E8B\u3002\r"
+    choices: []
+  - nodeId: harper_03
+    speakerName: "\u54C8\u73C0\u4E2D\u58EB"
+    speakerColor: {r: 1, g: 1, b: 1, a: 0}
+    portrait: {fileID: 0}
+    text: "\u4F60\u53EF\u4EE5\u53EB\u6211\u54C8\u73C0\u4E2D\u58EB\uFF0C\u4ECE\u4ECA\u5929\u5F00\u59CB\u6211\u5C06\u8D1F\u8D23\u8BAD\u7EC3\u65B0\u5175\u3002\u73B0\u5728\u5148\u53BB\u628A\u6B66\u5668\u7BB1\u91CC\u7684\u624B\u67AA\u62FF\u8D77\u6765\u3002\r"
+    choices:
+    - buttonText: "\u6536\u5230\u3002"
+      requiredFlags: []
+      forbiddenFlags: []
+      nextNodeId: 
+      onSelected:
+        m_PersistentCalls:
+          m_Calls:
+          - m_Target: {fileID: 11400000, guid: 2daca676ac83c444e9fa359faed6f034, type: 2}
+            m_TargetAssemblyTypeName: QuestAsset, Assembly-CSharp
+            m_MethodName: StartFromEvent
+            m_Mode: 1
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument: 
+              m_BoolArgument: 0
+            m_CallState: 2

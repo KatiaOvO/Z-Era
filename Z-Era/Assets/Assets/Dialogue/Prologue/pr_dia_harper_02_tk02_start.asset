@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99bd3cb82ac25b64bb8347d92bafc97d, type: 3}
+  m_Name: pr_dia_harper_02_tk02_start
+  m_EditorClassIdentifier: 
+  startNodeId: harper_01
+  nodes:
+  - nodeId: harper_01
+    speakerName: "\u54C8\u73C0\u4E2D\u58EB"
+    speakerColor: {r: 1, g: 1, b: 1, a: 0}
+    portrait: {fileID: 0}
+    text: "\u5F88\u597D\uFF0C\u65B0\u5175\u3002"
+    choices: []

@@ -12,9 +12,14 @@ namespace Migration.UI
 
         void Show();
 
+        void Hide();
+
         // Show() 动画是否已完成且元素完全显示，
         // 供背包等系统判断"溶解加载完成"。
         bool isShowComplete { get; }
+
+        // Hide() 动画是否已完成且元素完全消失。
+        bool isHideComplete { get; }
     }
 
     [ExecuteAlways]
@@ -124,6 +129,11 @@ namespace Migration.UI
         public bool isShowComplete
         {
             get { return !m_IsAnimating && m_Location <= 0.001f; }
+        }
+
+        public bool isHideComplete
+        {
+            get { return !m_IsAnimating && m_Location >= 0.999f; }
         }
 
         protected override void OnEnable()

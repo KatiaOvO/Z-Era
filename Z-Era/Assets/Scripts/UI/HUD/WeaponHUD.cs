@@ -2,6 +2,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+// 先于 WeaponController 执行：换弹触发的同一帧里，
+// HandleAmmo 会立刻把弹匣补满，若 HUD 后读，会有一帧
+// 用"已补满"的弹量渲染红条（红条闪没、露出白色图标）。
+// 提前执行让 HUD 在补满前完成本帧渲染。
+[DefaultExecutionOrder(-10)]
 public class WeaponHUD : MonoBehaviour
 {
     [Header("武器 UI")]
@@ -13,6 +18,15 @@ public class WeaponHUD : MonoBehaviour
 
     [Tooltip("红色填充 Image 组件 (Type: Filled, Fill Method: Vertical, Fill Origin: Top)")]
     public Image weaponRedFill;
+
+    [Tooltip("武器相关 UI 的根节点（如 WeaponGroup），没有可显示的武器数据时整体隐藏；留空则退化为只控制武器图标所在物体")]
+    public GameObject weaponUIGroup;
+
+    // 武器 UI 当前的显隐状态，避免每帧重复 SetActive。
+    private bool weaponUIVisible = true;
+
+    [Tooltip("弹匣与备弹之间的分隔符文本（/）")]
+    public TMP_Text slashText;
 
     [Header("弹药 UI")]
     [Tooltip("当前弹匣子弹数，右对齐")]
@@ -124,10 +138,62 @@ public class WeaponHUD : MonoBehaviour
             FindActiveWeapon();
         }
 
+        UpdateWeaponUIVisibility();
+
         if (currentWeapon != null)
         {
             UpdateAmmoVisuals();
             UpdateAmmoUI();
+        }
+    }
+
+    // 手持武器模型被禁用（读不到武器数据）时隐藏全部武器 UI，
+    // 重新读到武器数据时恢复显示。
+    private void UpdateWeaponUIVisibility()
+    {
+        bool hasWeapon = currentWeapon != null &&
+            currentWeapon.gameObject.activeSelf &&
+            currentWeapon.CurrentGunData != null;
+
+        if (hasWeapon == weaponUIVisible)
+        {
+            return;
+        }
+
+        weaponUIVisible = hasWeapon;
+
+        // 指定了 Group 就整体显隐；未指定时退化为逐个控制
+        // 已引用的元素。出弹/入弹动画文本由换弹动画自行管理，
+        // 这里不碰，避免打断动画状态。
+        if (weaponUIGroup != null)
+        {
+            weaponUIGroup.SetActive(hasWeapon);
+            return;
+        }
+
+        if (weaponIcon != null)
+        {
+            weaponIcon.gameObject.SetActive(hasWeapon);
+        }
+
+        if (weaponRedFill != null)
+        {
+            weaponRedFill.gameObject.SetActive(hasWeapon);
+        }
+
+        if (slashText != null)
+        {
+            slashText.gameObject.SetActive(hasWeapon);
+        }
+
+        if (magazineAmmoText != null)
+        {
+            magazineAmmoText.gameObject.SetActive(hasWeapon);
+        }
+
+        if (carriedAmmoText != null)
+        {
+            carriedAmmoText.gameObject.SetActive(hasWeapon);
         }
     }
 
@@ -138,7 +204,9 @@ public class WeaponHUD : MonoBehaviour
 
         foreach (var w in weapons)
         {
-            if (w.gameObject.activeSelf)
+            // GunData 为空的武器视为没有可读数据，同样跳过。
+            if (w.gameObject.activeSelf &&
+                w.CurrentGunData != null)
             {
                 CancelAmmoTextAnimation();
 
@@ -291,8 +359,15 @@ public class WeaponHUD : MonoBehaviour
                             : 1f
                     );
 
-                reloadOldMagazineAmmo = lastMagazineAmmo;
-                reloadOldCarriedAmmo = lastCarriedAmmo;
+                // 旧弹量读换弹开始瞬间的快照：
+                // HandleAmmo 在触发换弹的同一帧就已把弹匣补满，
+                // 若读当前值，留弹换弹的填充起点会变成终点，
+                // 红条瞬间到位（看起来像没有填充动画）。
+                reloadOldMagazineAmmo =
+                    currentWeapon.ReloadStartMagazineAmmo;
+
+                reloadOldCarriedAmmo =
+                    currentWeapon.ReloadStartCarriedAmmo;
 
                 int magazineSize =
                     lastMagazineSize > 0
@@ -363,6 +438,8 @@ public class WeaponHUD : MonoBehaviour
                 }
 
                 pendingAmmoTextSwap = true;
+
+                // 临时诊断：打印本次换弹的真实起止填充值，确认后删除。
             }
 
             if (weaponRedFill != null)
@@ -398,6 +475,11 @@ public class WeaponHUD : MonoBehaviour
         }
         else
         {
+            // 临时诊断：换弹状态在 HUD 侧丢失的时间点，确认后删除。
+            if (wasReloading)
+            {
+            }
+
             wasReloading = false;
             activeReloadStateName = null;
             reloadStartFillAmount = 1f;

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class PickableItem : MonoBehaviour
 {
@@ -15,6 +16,16 @@ public class PickableItem : MonoBehaviour
     [Tooltip("覆盖全局的单件交互距离（米），0 表示使用 PickupController 的默认交互距离")]
     public float interactionDistanceOverride;
 
+    [Header("拾取效果")]
+
+    [Tooltip("拾取成功时自动设置的对话标记（写入 DialogueFlags），供对话/任务条件判定，如 Task01_Done")]
+    [SerializeField]
+    private string[] flagsToSetOnPickup;
+
+    [Tooltip("拾取成功时触发，例如接 QuestManager.AddProgress 上报任务进度（参数在检查器里填）")]
+    [SerializeField]
+    private UnityEvent onPickedUp;
+
     private void OnEnable()
     {
         if (!registeredItems.Contains(this))
@@ -26,6 +37,21 @@ public class PickableItem : MonoBehaviour
     private void OnDisable()
     {
         registeredItems.Remove(this);
+    }
+
+    // 由 PickupController 在拾取成功时调用。
+    // 在道具入包禁用前触发，监听方仍可访问道具本体。
+    public void NotifyPickedUp()
+    {
+        if (flagsToSetOnPickup != null)
+        {
+            foreach (string flagName in flagsToSetOnPickup)
+            {
+                DialogueFlags.SetFlag(flagName, true);
+            }
+        }
+
+        onPickedUp?.Invoke();
     }
 
     // 查询道具当前是否处于注册状态（已激活且可拾取）。

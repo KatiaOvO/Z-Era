@@ -19,9 +19,9 @@ TagManager:
   - Zombie
   - ZombieHearing
   - Bullet
-  - 
-  - 
-  - 
+  - NPC
+  - TrainingGroundWall
+  - TaskTrigger
   - 
   - 
   - 

@@ -37,6 +37,11 @@ namespace Migration.UI
             get { return !isAnimating && location <= 0.001f; }
         }
 
+        public bool isHideComplete
+        {
+            get { return !isAnimating && location >= 0.999f; }
+        }
+
         public void SetLocation(float value)
         {
             location = Mathf.Clamp01(value);
@@ -51,6 +56,21 @@ namespace Migration.UI
             if (duration <= 0f)
             {
                 location = 0f;
+                isAnimating = false;
+                ApplyDissolve();
+                return;
+            }
+
+            isAnimating = true;
+        }
+
+        public void Hide()
+        {
+            targetLocation = 1f;
+
+            if (duration <= 0f)
+            {
+                location = 1f;
                 isAnimating = false;
                 ApplyDissolve();
                 return;

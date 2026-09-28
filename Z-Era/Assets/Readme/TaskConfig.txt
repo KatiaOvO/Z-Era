@@ -1,0 +1,936 @@
+==================================================
+任务系统配置手册
+==================================================
+
+适用文件：
+- Assets/Scripts/Task/QuestAsset.cs
+- Assets/Scripts/Task/QuestManager.cs
+- Assets/Scripts/Task/QuestTrigger.cs
+- Assets/Scripts/Task/QuestHUDController.cs
+
+任务系统没有“主线、支线、日常、限时”等内置类型枚举。
+所有任务都使用 Quest Asset 创建，再通过以下内容组合出不同任务类型：
+
+1. 目标数量
+2. 接取条件
+3. 进度上报方式
+4. 对话 Flag 联动
+5. UnityEvent 奖励事件
+6. HUD 显示方式
+
+
+==================================================
+一、统一配置流程
+==================================================
+
+1. 创建任务资产
+--------------------------------------------------
+
+在 Project 窗口右键：
+
+    Create > Task > Quest Asset
+
+
+2. 配置任务基础信息
+--------------------------------------------------
+
+Quest Id
+    任务唯一标识，整个项目内不能重复。
+    例如：Quest_ShootTargets
+
+Title
+    任务名称。
+    例如：靶场训练
+
+Description
+    任务描述。
+    当前 Quest HUD 不显示此字段，可用于任务日志或其他 UI。
+
+Objectives
+    任务目标列表。
+    每个任务至少需要一个目标。
+
+
+3. 配置任务目标
+--------------------------------------------------
+
+Objective Id
+    目标唯一标识。
+    同一个任务内的 Objective Id 不能重复。
+
+Description
+    显示在任务 HUD 中的指引文本。
+    例如：射击训练靶
+
+Required Amount
+    完成该目标需要的次数。
+
+    Required Amount = 1
+        HUD 只显示 Description，不显示进度数字。
+
+    Required Amount > 1
+        HUD 显示类似：
+        射击训练靶（0/5）
+
+
+4. 配置接取条件
+--------------------------------------------------
+
+Prerequisite Quest Ids
+    前置任务 ID 列表。
+    所有前置任务都必须是 Completed 状态。
+
+Required Flags
+    必须全部存在的 DialogueFlags。
+    只要缺少任意一个，任务无法接取。
+
+Forbidden Flags
+    禁止存在的 DialogueFlags。
+    只要存在任意一个，任务无法接取。
+
+
+5. 配置 Flag 联动
+--------------------------------------------------
+
+Flags To Set On Accept
+    任务成功接取时自动设置的 Flag。
+
+Flags To Set On Complete
+    任务完成时自动设置的 Flag。
+    可用于切换 NPC 对话、开放后续任务或推动剧情。
+
+
+6. 配置任务事件
+--------------------------------------------------
+
+On Accept
+    任务接取时触发。
+    适合播放音效、显示通知或执行接取表现。
+
+On Complete
+    任务完成时触发。
+    适合发放金币、经验、物品等奖励。
+
+
+7. 配置任务接取方式
+--------------------------------------------------
+
+在场景物体上添加 Quest Trigger：
+
+    Mode: Start Quest
+    Quest: 选择对应的 Quest Asset
+
+接取方式二选一：
+
+    Activation: On Trigger Enter
+        玩家进入触发区域时尝试接取。
+
+    Activation: On Interact
+        玩家准星指向物体并按交互键时尝试接取。
+
+
+8. 配置目标进度上报
+--------------------------------------------------
+
+在目标位置或对应玩法物体上添加 Quest Trigger：
+
+    Mode: Add Progress
+    Quest Id: 与任务资产的 Quest Id 完全一致
+    Objective Id: 与目标的 Objective Id 完全一致
+    Amount: 每次触发增加的进度
+
+任务的所有目标都达到 Required Amount 后，任务自动完成。
+
+
+9. 配置任务 HUD
+--------------------------------------------------
+
+在 HUD Canvas 下添加 Quest HUD Controller：
+
+Ring Image
+    任务整体进度圆环。
+    Image 设置为：
+        Image Type: Filled
+        Fill Method: Radial 360
+
+Check Object
+    任务完成时显示并弹跳的勾。
+
+Guide Text
+    显示当前目标描述的 TMP 文本。
+
+Guide Format
+    默认值：
+        {0}（{1}/{2}）
+
+    {0} = 目标描述
+    {1} = 当前进度
+    {2} = 需求次数
+
+    当 Required Amount 为 1 时，只显示目标描述。
+
+Check Pop Scale
+    完成勾弹跳的最大缩放倍数。
+
+Check Pop Duration
+    完成勾弹跳动画时长。
+
+Completed Hold Duration
+    任务完成后，完成勾停留多久再隐藏。
+
+
+==================================================
+二、任务类型配置
+==================================================
+
+
+类型 1：单次目标任务
+--------------------------------------------------
+
+适合：
+- 到达某个区域
+- 调查某个物体
+- 触发一次机关
+- 完成一次教学操作
+
+Quest Asset：
+
+    Quest Id: Quest_GoToRange
+
+    Objectives:
+        Objective Id: reachRange
+        Description: 前往射击区域
+        Required Amount: 1
+
+接取触发器：
+
+    Mode: Start Quest
+    Quest: Quest_GoToRange
+    Activation: On Trigger Enter 或 On Interact
+
+进度触发器：
+
+    Mode: Add Progress
+    Quest Id: Quest_GoToRange
+    Objective Id: reachRange
+    Amount: 1
+    Trigger Once: true
+
+
+类型 2：累计次数任务
+--------------------------------------------------
+
+适合：
+- 击杀 5 个敌人
+- 收集 3 个物品
+- 射中 5 个靶子
+- 采集 10 个资源
+- 与 NPC 交谈 3 次
+
+Quest Asset：
+
+    Quest Id: Quest_ShootTargets
+
+    Objectives:
+        Objective Id: hitTargets
+        Description: 射击训练靶
+        Required Amount: 5
+
+每完成一次，上报一次进度：
+
+    QuestManager.AddProgress(
+        Quest_ShootTargets,
+        hitTargets,
+        1
+    )
+
+也可以使用 Quest Trigger：
+
+    Mode: Add Progress
+    Quest Id: Quest_ShootTargets
+    Objective Id: hitTargets
+    Amount: 1
+
+注意：
+    Quest Trigger 的 OnTriggerEnter 适合玩家或投射物真正进入
+    触发器的情况。
+
+    如果武器使用射线命中，子弹不一定触发 OnTriggerEnter。
+    真正的“子弹命中靶子”通常需要靶子命中逻辑调用 AddProgress。
+
+
+类型 3：多目标任务
+--------------------------------------------------
+
+适合：
+- 击杀敌人并收集掉落物
+- 到达区域并与 NPC 对话
+- 射击靶子并返回教官处
+- 同时完成多个独立条件
+
+Quest Asset：
+
+    Quest Id: Quest_CombatTraining
+
+    Objectives:
+        Objective Id: killEnemies
+        Description: 消灭训练敌人
+        Required Amount: 3
+
+        Objective Id: collectItems
+        Description: 拾取训练物资
+        Required Amount: 2
+
+完成规则：
+    所有目标全部达到 Required Amount 后，任务自动完成。
+
+HUD 行为：
+    始终显示第一个尚未完成的目标。
+
+    圆环进度 =
+        所有目标当前进度之和
+        / 所有目标需求次数之和
+
+
+类型 4：任务链
+--------------------------------------------------
+
+适合：
+
+    任务 A 完成
+    → 才能接任务 B
+    → 才能接任务 C
+
+任务 A：
+
+    Quest Id: Quest_InstructorIntro
+
+    Objectives:
+        Objective Id: talkToInstructor
+        Description: 与教官对话
+        Required Amount: 1
+
+任务 B：
+
+    Quest Id: Quest_ShootTraining
+
+    Prerequisite Quest Ids:
+        Quest_InstructorIntro
+
+任务 C：
+
+    Quest Id: Quest_ReturnToInstructor
+
+    Prerequisite Quest Ids:
+        Quest_ShootTraining
+
+接取规则：
+    所有前置任务都必须是 Completed。
+
+
+类型 5：对话后接取任务
+--------------------------------------------------
+
+适合：
+
+    与 NPC 对话
+    → 对话结束
+    → 接取任务
+
+NPC Dialogue 配置：
+
+    Talked Flag: InstructorTalked
+
+Quest Asset 配置：
+
+    Required Flags:
+        InstructorTalked
+
+Quest Trigger 配置：
+
+    Mode: Start Quest
+    Quest: 对应任务资产
+    Activation: On Trigger Enter
+    Required Flags:
+        InstructorTalked
+    Trigger Tag: Player
+
+流程：
+
+    与教官对话
+    → 获得 InstructorTalked
+    → 玩家进入任务触发区域
+    → 接取任务
+
+
+类型 6：前置 Flag 任务
+--------------------------------------------------
+
+适合：
+- 必须先完成某段剧情
+- 必须先获得某件物品
+- 必须先和某个 NPC 见面
+- 必须先解锁某个区域
+
+Quest Asset 配置：
+
+    Required Flags:
+        Story_IntroComplete
+        Has_KeyCard
+
+只有全部 Flag 都存在时，任务才能接取。
+
+
+类型 7：禁止条件任务
+--------------------------------------------------
+
+适合：
+- 已拒绝任务后不能再接
+- 已选择分支 A 后不能接分支 B
+- 已完成隐藏结局后不能接普通任务
+
+Quest Asset 配置：
+
+    Forbidden Flags:
+        Refused_Training
+        Chose_Path_A
+
+只要存在任意一个 Flag，任务就不能接取。
+
+
+类型 8：前置任务 + Flag 双重条件
+--------------------------------------------------
+
+Quest Asset 配置：
+
+    Prerequisite Quest Ids:
+        Quest_Main_01
+
+    Required Flags:
+        NPC_TrustComplete
+
+    Forbidden Flags:
+        PlayerRejectedMission
+
+接取时必须同时满足：
+1. 当前任务状态为 NotStarted
+2. 所有前置任务均为 Completed
+3. 所有 Required Flags 都存在
+4. 所有 Forbidden Flags 都不存在
+
+
+类型 9：接取时写入 Flag
+--------------------------------------------------
+
+适合：
+- 接取任务后让 NPC 改变对话
+- 接取任务后解锁新区域
+- 接取任务后改变剧情状态
+
+Quest Asset 配置：
+
+    Flags To Set On Accept:
+        TrainingStarted
+        InstructorBusy
+
+对话联动示例：
+
+    Conditional Dialogue:
+        Required Flags: TrainingStarted
+        Dialogue: Dialogue_AfterTrainingStarted
+
+
+类型 10：完成时写入 Flag
+--------------------------------------------------
+
+适合：
+- 完成任务后解锁下一段对话
+- 完成任务后开启后续任务
+- 完成任务后改变 NPC 状态
+- 完成任务后触发结局分支
+
+Quest Asset 配置：
+
+    Flags To Set On Complete:
+        TrainingDone
+        InstructorProud
+
+典型流程：
+
+    完成射击训练
+    → 设置 TrainingDone
+    → 教官切换到完成后的对话
+    → 后续任务可以接取
+
+
+类型 11：任务奖励任务
+--------------------------------------------------
+
+Quest Asset 配置：
+
+    On Accept:
+        播放任务提示音
+        显示任务通知
+
+    On Complete:
+        发放金币
+        发放经验
+        播放完成音效
+
+接取事件顺序：
+
+    校验成功
+    → 写入 Flags To Set On Accept
+    → On Accept
+    → Quest Accepted 事件
+
+完成事件顺序：
+
+    所有目标完成
+    → 状态改为 Completed
+    → 写入 Flags To Set On Complete
+    → On Complete
+    → Quest Completed 事件
+
+
+类型 12：NPC 或物体交互任务
+--------------------------------------------------
+
+Quest Trigger 配置：
+
+    Activation: On Interact
+    Interact Key: E
+    Interact Distance: 2.5
+    Prompt Text: 绑定一个 TMP Text
+    Prompt Format: 按 {0} 交互
+
+运行条件：
+- 场景中存在 Camera.main
+- 玩家鼠标处于锁定状态
+- 准星射线能命中触发器所在物体
+- 距离小于 Interact Distance
+
+接任务：
+
+    Mode: Start Quest
+    Quest: 选择任务资产
+
+上报进度：
+
+    Mode: Add Progress
+    Quest Id: 填任务 ID
+    Objective Id: 填目标 ID
+    Amount: 每次增加的进度
+
+
+类型 13：区域触发任务
+--------------------------------------------------
+
+Quest Trigger 配置：
+
+    Activation: On Trigger Enter
+    Trigger Tag: Player
+    Trigger Once: true
+
+触发器物体配置：
+
+    Box Collider
+    Is Trigger: true
+
+重要：
+    Trigger Tag 比较的是 Tag，不是 Layer。
+
+    如果玩家是 Untagged，而触发器要求 Player，
+    任务不会触发。
+
+
+类型 14：可重复进度触发器
+--------------------------------------------------
+
+Quest Trigger 配置：
+
+    Trigger Once: false
+    Amount: 1
+
+注意：
+- OnTriggerEnter 需要离开后再次进入才会再次触发
+- 当前系统没有 OnTriggerStay 模式
+- 只需要一次的触发点必须设置 Trigger Once: true
+
+
+类型 15：多个任务同时进行
+--------------------------------------------------
+
+系统允许多个任务同时处于 Active 状态。
+
+可以分别创建：
+
+    Quest_Main_Training
+    Quest_Side_Collect
+    Quest_Side_Conversation
+
+HUD 行为：
+- HUD 不会同时显示所有任务
+- 始终显示最新接取的进行中任务
+- 当前任务完成后，切换到剩余任务中最后接取的任务
+
+
+类型 16：代码驱动任务
+--------------------------------------------------
+
+适合：
+- 击杀事件
+- 武器命中事件
+- 背包物品数量变化
+- 对话选项结果
+- 动画事件
+- 关卡逻辑
+- 自定义玩法系统
+
+接取任务：
+
+    QuestManager.StartQuest(asset)
+
+增加进度：
+
+    QuestManager.AddProgress(
+        questId,
+        objectiveId,
+        amount
+    )
+
+直接完成目标：
+
+    QuestManager.SetObjectiveComplete(
+        questId,
+        objectiveId
+    )
+
+查询状态：
+
+    QuestManager.GetQuestState(questId)
+    QuestManager.IsQuestActive(questId)
+    QuestManager.IsQuestCompleted(questId)
+    QuestManager.GetObjectiveCurrent(
+        questId,
+        objectiveId
+    )
+
+
+==================================================
+三、Quest Trigger 配置矩阵
+==================================================
+
+用途                          配置
+------------------------------ --------------------------------
+接取整个任务                  Mode: Start Quest
+增加目标进度                  Mode: Add Progress
+玩家进入区域                  Activation: On Trigger Enter
+玩家按 E 交互                 Activation: On Interact
+只能触发一次                  Trigger Once: true
+可重复触发                    Trigger Once: false
+需要对话标记                  Required Flags
+
+
+Start Quest 模式：
+
+    Quest: 必填
+    Quest Id: 不使用
+    Objective Id: 不使用
+
+
+Add Progress 模式：
+
+    Quest Id: 必填
+    Objective Id: 必填
+    Amount: 必填
+
+
+==================================================
+四、任务状态与事件
+==================================================
+
+状态流转：
+
+    NotStarted
+        ↓ StartQuest
+    Active
+        ↓ 所有目标完成
+    Completed
+
+
+状态说明：
+
+    NotStarted
+        未接取，或前置条件尚未满足。
+
+    Active
+        任务正在进行。
+
+    Completed
+        任务已经完成。
+
+
+查询接口：
+
+    QuestManager.GetQuestState(questId)
+    QuestManager.IsQuestActive(questId)
+    QuestManager.IsQuestCompleted(questId)
+    QuestManager.GetObjectiveCurrent(
+        questId,
+        objectiveId
+    )
+    QuestManager.ActiveQuests
+
+
+==================================================
+五、当前系统不支持的任务类型
+==================================================
+
+以下类型不能直接通过现有 Inspector 实现：
+
+1. 主线/支线专用类型
+   没有类型字段，只能通过命名或 Flag 模拟。
+
+2. 每日/周常任务
+   没有日期和重置系统。
+
+3. 可重复任务
+   没有任务状态 Reset API。
+
+4. 限时任务
+   没有倒计时系统。
+
+5. 失败任务
+   只有 NotStarted、Active、Completed，没有 Failed。
+
+6. 放弃任务
+   没有取消或移除任务 API。
+
+7. 任务日志列表
+   当前 HUD 只显示最新任务。
+
+8. 多任务同时显示
+   当前 HUD 不支持任务列表 UI。
+
+9. 任务存档
+   QuestManager 只在当前游戏进程内保存，
+   退出 Play Mode 后状态清空。
+
+10. 运行时重新开始任务
+    没有 Reset 或 Restart API。
+
+11. 分数与评价
+    没有 S/A/B/C 评价字段。
+
+12. 随机任务
+    没有随机目标或随机任务生成。
+
+13. 零目标任务
+    任务至少需要一个有效目标。
+
+
+==================================================
+六、跨场景与存档规则
+==================================================
+
+QuestManager 使用 DontDestroyOnLoad：
+
+    切换场景
+    → 任务状态保留
+
+退出 Play Mode：
+
+    任务状态清空
+
+因此当前的“跨场景保存”只是运行时保存，
+不是磁盘存档。
+
+DialogueFlags 同样只在当前游戏进程内保存。
+
+
+==================================================
+七、常见配置错误
+==================================================
+
+1. 玩家 Tag 不匹配
+--------------------------------------------------
+
+触发器：
+
+    Trigger Tag: Player
+
+玩家必须：
+
+    Tag: Player
+
+Player Layer 不能替代 Player Tag。
+
+
+2. Quest Id 不一致
+--------------------------------------------------
+
+任务资产：
+
+    Quest Id: Quest_ShootTargets
+
+进度触发器：
+
+    Quest Id: Quest_ShootTargets
+
+必须完全一致，包括大小写。
+
+
+3. Objective Id 不一致
+--------------------------------------------------
+
+任务资产：
+
+    Objective Id: hitTargets
+
+进度触发器：
+
+    Objective Id: hitTargets
+
+必须完全一致。
+
+
+4. 任务尚未接取就上报进度
+--------------------------------------------------
+
+Add Progress 只对 Active 任务生效。
+
+如果任务是 NotStarted，进度会被忽略。
+
+
+5. 前置任务未完成
+--------------------------------------------------
+
+Start Quest 会检查 Prerequisite Quest Ids。
+
+前置任务不是 Completed 时，任务无法接取。
+
+
+6. Required Flags 缺失
+--------------------------------------------------
+
+Quest Asset 和 Quest Trigger 都可以配置 Required Flags。
+
+两边的条件都需要满足。
+
+
+7. Forbidden Flags 已存在
+--------------------------------------------------
+
+只要存在任意一个禁止 Flag，任务不能接取。
+
+
+8. Trigger Once 过早锁定
+--------------------------------------------------
+
+Quest Trigger 会先标记“已触发”，再调用任务系统。
+
+如果任务因为前置条件不满足而接取失败，
+Trigger Once: true 的触发器可能已经不能再触发。
+
+任务链建议：
+- 确保玩家只有在前置任务完成后才能进入触发区域
+- 或暂时设置 Trigger Once: false
+- 或由代码检查 StartQuest 的返回结果
+
+
+9. 零目标任务
+--------------------------------------------------
+
+任务至少要有一个有效目标。
+
+没有目标时，任务无法通过正常进度流程完成。
+
+
+10. 重复 ID
+--------------------------------------------------
+
+- Quest Id 全项目唯一
+- 同一任务内 Objective Id 唯一
+
+
+==================================================
+八、当前教程任务示例
+==================================================
+
+流程：
+
+    与教官对话
+    → 获得 InstructorTalked
+    → 进入 ShootAera
+    → 接取 Tutorial_ShootTargets
+    → hitTargets 上报 5 次进度
+    → 设置 TargetTrainingDone
+    → 任务完成
+
+
+Quest Asset：
+
+    Quest Id: Tutorial_ShootTargets
+
+    Objectives:
+        Objective Id: hitTargets
+        Description: 射击训练靶
+        Required Amount: 5
+
+    Required Flags:
+        InstructorTalked
+
+    Flags To Set On Complete:
+        TargetTrainingDone
+
+
+NPC Dialogue：
+
+    Talked Flag: InstructorTalked
+
+
+Quest Trigger：
+
+    Mode: Start Quest
+    Quest: Tutorial_ShootTargets
+    Activation: On Trigger Enter
+    Required Flags: InstructorTalked
+    Trigger Tag: Player
+    Trigger Once: true
+    Collider Is Trigger: true
+
+
+仍需接入的部分：
+
+    子弹命中靶子
+    → QuestManager.AddProgress(
+          Tutorial_ShootTargets,
+          hitTargets,
+          1
+      )
+
+如果靶子命中逻辑没有上报任务进度，
+任务可以接取，但 hitTargets 不会自动增加。
+
+
+==================================================
+九、运行前检查清单
+==================================================
+
+[ ] Quest Id 全项目唯一
+[ ] 至少配置一个 Objective
+[ ] Objective Id 在任务内唯一
+[ ] 进度触发器的 Quest Id 与任务资产一致
+[ ] 进度触发器的 Objective Id 与任务资产一致
+[ ] 前置任务已经完成
+[ ] Required Flags 全部存在
+[ ] Forbidden Flags 全部不存在
+[ ] 玩家 Tag 满足 Trigger Tag
+[ ] Trigger Collider 已勾选 Is Trigger
+[ ] 触发区域确实位于玩家必经路径
+[ ] OnInteract 模式存在 Camera.main
+[ ] OnInteract 模式鼠标处于锁定状态
+[ ] HUD 已绑定 Ring Image、Check Object、Guide Text
+[ ] 真实玩法事件已经调用 AddProgress
+[ ] On Complete 奖励事件配置正确

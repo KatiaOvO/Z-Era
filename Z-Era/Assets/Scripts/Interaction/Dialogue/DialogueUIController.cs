@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Migration.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -38,6 +39,34 @@ public class DialogueUIController : MonoBehaviour
     [SerializeField]
     private GameObject continueIndicator;
 
+    [Header("继续标记动画")]
+
+    [Tooltip("继续标记上下浮动的幅度（像素）")]
+    [SerializeField, Min(0f)]
+    private float continueIndicatorBobDistance = 8f;
+
+    [Tooltip("继续标记上下浮动的速度（每秒循环次数）")]
+    [SerializeField, Min(0.1f)]
+    private float continueIndicatorBobSpeed = 1.5f;
+
+    [Header("选项按钮宽度")]
+
+    [Tooltip("选项按钮的最小宽度（像素），短选项保底")]
+    [SerializeField, Min(0f)]
+    private float choiceButtonMinWidth = 160f;
+
+    [Tooltip("选项按钮的最大宽度（像素），超过的选项文本自动换行")]
+    [SerializeField, Min(0f)]
+    private float choiceButtonMaxWidth = 480f;
+
+    [Tooltip("文字与按钮左右边缘的边距（像素，单侧）")]
+    [SerializeField, Min(0f)]
+    private float choiceTextMarginX = 24f;
+
+    [Tooltip("文字与按钮上下边缘的边距（像素，单侧）")]
+    [SerializeField, Min(0f)]
+    private float choiceTextMarginY = 10f;
+
     [Header("打字机")]
 
     [Tooltip("每秒打印的字符数")]
@@ -61,8 +90,20 @@ public class DialogueUIController : MonoBehaviour
 
     private Coroutine typingCoroutine;
 
+    // 继续标记的设计位置，浮动动画围绕它上下摆动。
+    private Vector2 continueIndicatorBasePosition;
+
     private readonly List<RectTransform> spawnedChoiceButtons =
         new List<RectTransform>();
+
+    // 与按钮一一对应的溶解组件（按钮根挂 UIDissolveImage 时生效）。
+    private readonly List<IUIDissolveEffect> spawnedChoiceDissolves =
+        new List<IUIDissolveEffect>();
+
+    private Coroutine choicesHideCoroutine;
+
+    // 选项按钮正在溶解消失、尚未销毁。
+    public bool IsChoicesHiding { get; private set; }
 
     // 句末标点：打完后停顿更久。
     private static readonly char[] SentenceEnders =
@@ -75,6 +116,79 @@ public class DialogueUIController : MonoBehaviour
     {
         ',', '，', '、', '：', ':'
     };
+
+    private void Awake()
+    {
+        // 记录继续标记的设计位置，浮动围绕它进行。
+        if (continueIndicator != null &&
+            continueIndicator.transform
+                is RectTransform rect)
+        {
+            continueIndicatorBasePosition = rect.anchoredPosition;
+        }
+    }
+
+    private void Update()
+    {
+        // 继续标记可见时围绕设计位置上下浮动。
+        if (continueIndicator == null ||
+            !continueIndicator.activeInHierarchy)
+        {
+            return;
+        }
+
+        if (continueIndicator.transform
+                is not RectTransform rect)
+        {
+            return;
+        }
+
+        float bob = Mathf.Sin(
+            Time.unscaledTime *
+            continueIndicatorBobSpeed *
+            Mathf.PI * 2f
+        ) * continueIndicatorBobDistance;
+
+        rect.anchoredPosition =
+            continueIndicatorBasePosition + Vector2.up * bob;
+    }
+
+    // 在文本测量结果之上额外增加的整体余量。
+    private const float ChoiceExtraWidth = 20f;
+    private const float ChoiceExtraHeight = 10f;
+
+    /// <summary>
+    /// 清空全部显示内容。对话打开、溶解入场播放前调用，
+    /// 避免预制体中的占位文本在溶解期间露出来。
+    /// </summary>
+    public void ResetDisplay()
+    {
+        StopTyping();
+        IsTyping = false;
+
+        if (speakerText != null)
+        {
+            speakerText.gameObject.SetActive(false);
+            speakerText.text = string.Empty;
+        }
+
+        if (bodyText != null)
+        {
+            bodyText.text = string.Empty;
+        }
+
+        if (portraitImage != null)
+        {
+            portraitImage.gameObject.SetActive(false);
+        }
+
+        if (continueIndicator != null)
+        {
+            continueIndicator.SetActive(false);
+        }
+
+        HideChoices();
+    }
 
     /// <summary>
     /// 显示一个节点：设置说话人、头像，并开始打字机。
@@ -146,7 +260,8 @@ public class DialogueUIController : MonoBehaviour
         UnityAction<DialogueAsset.DialogueChoice> onSelect
     )
     {
-        HideChoices();
+        // 上一次隐藏动画若未结束，立即清理掉再生成新按钮。
+        ForceClearChoices();
 
         if (choicesContainer == null || choiceButtonPrefab == null)
         {
@@ -168,12 +283,20 @@ public class DialogueUIController : MonoBehaviour
                 choicesContainer
             );
 
+            // 注入引用，悬停表现组件就绪。
+            button.GetComponent<DialogueChoiceButton>()
+                ?.Setup();
+
             TMP_Text label =
                 button.GetComponentInChildren<TMP_Text>(true);
 
             if (label != null)
             {
                 label.text = choice.buttonText;
+
+                // 文字子物体拉伸铺满按钮、居中、可换行，
+                // 按钮尺寸随后由 ApplyUniformChoiceWidths 统一设定。
+                ConfigureChoiceLabel(label);
             }
 
             button.GetComponent<Button>().onClick.AddListener(
@@ -181,11 +304,270 @@ public class DialogueUIController : MonoBehaviour
             );
 
             spawnedChoiceButtons.Add(button);
+
+            // 缓存按钮及其文字上的全部溶解组件；
+            // 出现时统一驱动（UIDissolveImage 不像 UIDissolveText
+            // 那样会在 OnEnable 自驱动，必须显式 Show）。
+            IUIDissolveEffect[] dissolves =
+                button.GetComponentsInChildren<
+                    IUIDissolveEffect
+                >(true);
+
+            foreach (
+                IUIDissolveEffect dissolve in dissolves
+            )
+            {
+                spawnedChoiceDissolves.Add(dissolve);
+
+                dissolve.SetLocation(1f);
+                dissolve.Show();
+            }
+        }
+
+        ApplyUniformChoiceWidths();
+    }
+
+    // 让文字子物体拉伸铺满按钮，边距与对齐方式由代码接管，
+    // 不依赖预制体里文字的锚点/对齐配置。
+    private void ConfigureChoiceLabel(TMP_Text label)
+    {
+        RectTransform rect = label.rectTransform;
+
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = new Vector2(
+            choiceTextMarginX,
+            choiceTextMarginY
+        );
+        rect.offsetMax = new Vector2(
+            -choiceTextMarginX,
+            -choiceTextMarginY
+        );
+
+        label.enableWordWrapping = true;
+        label.alignment = TextAlignmentOptions.Left;
+    }
+
+    // 统一选项按钮尺寸：宽度取最长选项（夹在最小/最大之间），
+    // 高度按各自文本（长选项换行后）自适应。
+    // 全部由代码计算，不依赖按钮预制体上的布局组件配置。
+    private void ApplyUniformChoiceWidths()
+    {
+        if (spawnedChoiceButtons.Count == 0)
+        {
+            return;
+        }
+
+        // 容器若开了"拉伸子物体宽度"会覆盖代码设定的宽度，
+        // 这里强制关闭并居中对齐。
+        VerticalLayoutGroup containerLayout =
+            choicesContainer != null
+                ? choicesContainer
+                    .GetComponent<VerticalLayoutGroup>()
+                : null;
+
+        if (containerLayout != null)
+        {
+            containerLayout.childForceExpandWidth = false;
+            containerLayout.childAlignment = TextAnchor.MiddleCenter;
+        }
+
+        float widest = 0f;
+
+        foreach (
+            RectTransform button in spawnedChoiceButtons
+        )
+        {
+            if (button == null)
+            {
+                continue;
+            }
+
+            TMP_Text label =
+                button.GetComponentInChildren<TMP_Text>(true);
+
+            if (label == null)
+            {
+                continue;
+            }
+
+            // 单行不换行时的文本宽度 + 左右边距 = 按钮所需宽度。
+            Vector2 preferred = label.GetPreferredValues(
+                label.text,
+                Mathf.Infinity,
+                Mathf.Infinity
+            );
+
+            widest = Mathf.Max(
+                widest,
+                preferred.x + choiceTextMarginX * 2f + ChoiceExtraWidth
+            );
+        }
+
+        float finalWidth = Mathf.Clamp(
+            widest,
+            choiceButtonMinWidth,
+            choiceButtonMaxWidth
+        );
+
+        foreach (
+            RectTransform button in spawnedChoiceButtons
+        )
+        {
+            if (button == null)
+            {
+                continue;
+            }
+
+            button.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Horizontal,
+                finalWidth
+            );
+
+            // 宽度确定后重新测量文本（长选项会换行变高），
+            // 让按钮高度跟随实际行数。
+            TMP_Text label =
+                button.GetComponentInChildren<TMP_Text>(true);
+
+            if (label == null)
+            {
+                continue;
+            }
+
+            Vector2 preferred = label.GetPreferredValues(
+                label.text,
+                finalWidth - choiceTextMarginX * 2f,
+                Mathf.Infinity
+            );
+
+            button.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Vertical,
+                preferred.y + choiceTextMarginY * 2f + ChoiceExtraHeight
+            );
+        }
+
+        if (choicesContainer != null)
+        {
+            // 立即重排，避免出现一帧按钮挤在一起的闪烁。
+            LayoutRebuilder.ForceRebuildLayoutImmediate(
+                choicesContainer
+            );
         }
     }
 
+    /// <summary>
+    /// 隐藏选项：按钮根挂有溶解组件时先播溶解消失，
+    /// 播完再销毁；没挂则立即清理。非阻塞，
+    /// 动画状态通过 IsChoicesHiding 查询。
+    /// </summary>
     public void HideChoices()
     {
+        if (spawnedChoiceButtons.Count == 0 || IsChoicesHiding)
+        {
+            return;
+        }
+
+        // 点击的瞬间就清空按钮文字，溶解消失随后（延迟后）开始。
+        foreach (
+            RectTransform button in spawnedChoiceButtons
+        )
+        {
+            if (button == null)
+            {
+                continue;
+            }
+
+            TMP_Text label =
+                button.GetComponentInChildren<TMP_Text>(true);
+
+            if (label != null)
+            {
+                label.text = string.Empty;
+            }
+
+            // 中断悬停填充并还原，避免白色填充残留在溶解画面里。
+            button.GetComponent<DialogueChoiceButton>()
+                ?.OnHide();
+        }
+
+        IsChoicesHiding = true;
+        choicesHideCoroutine = StartCoroutine(
+            FinishHideChoices()
+        );
+    }
+
+    private IEnumerator FinishHideChoices()
+    {
+        bool hasDissolve = false;
+
+        foreach (
+            IUIDissolveEffect dissolve in
+                spawnedChoiceDissolves
+        )
+        {
+            if (dissolve == null)
+            {
+                continue;
+            }
+
+            dissolve.Hide();
+            hasDissolve = true;
+        }
+
+        if (!hasDissolve)
+        {
+            ForceClearChoices();
+            yield break;
+        }
+
+        // 最多等 2 秒兜底，防止某个溶解卡住导致按钮永不销毁。
+        float timeout = Time.unscaledTime + 2f;
+
+        while (Time.unscaledTime < timeout &&
+               !AllChoiceDissolvesHidden())
+        {
+            yield return null;
+        }
+
+        ForceClearChoices();
+    }
+
+    private bool AllChoiceDissolvesHidden()
+    {
+        foreach (
+            IUIDissolveEffect dissolve in
+                spawnedChoiceDissolves
+        )
+        {
+            Component component = dissolve as Component;
+
+            if (dissolve == null ||
+                component == null ||
+                !component.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (!dissolve.isHideComplete)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // 立即销毁全部选项按钮（不播溶解动画）。
+    private void ForceClearChoices()
+    {
+        if (choicesHideCoroutine != null)
+        {
+            StopCoroutine(choicesHideCoroutine);
+            choicesHideCoroutine = null;
+        }
+
+        IsChoicesHiding = false;
+
         foreach (
             RectTransform button in spawnedChoiceButtons
         )
@@ -197,6 +579,7 @@ public class DialogueUIController : MonoBehaviour
         }
 
         spawnedChoiceButtons.Clear();
+        spawnedChoiceDissolves.Clear();
 
         if (choicesContainer != null)
         {

@@ -221,7 +221,10 @@ public class PickupController : MonoBehaviour
 
         pickable = PickableItem.FromCollider(hit.collider);
 
-        if (pickable == null)
+        // GetComponentInParent 只看 GameObject 的激活状态，
+        // 组件被单独禁用时仍会返回，必须再查注册表：
+        // 禁用的组件不在注册表中，从而禁止拾取（与高亮行为一致）。
+        if (pickable == null || !PickableItem.IsRegistered(pickable))
         {
             return false;
         }
@@ -251,6 +254,10 @@ public class PickupController : MonoBehaviour
 
         // 先还原描边材质，避免描边跟随道具进入背包。
         RemoveOutline(item);
+
+        // 拾取副作用（设置对话标记、上报任务进度等）在道具
+        // 入包禁用前触发，监听方仍可访问道具本体。
+        item.NotifyPickedUp();
 
         item.transform.SetParent(container, false);
         item.transform.localPosition = Vector3.zero;

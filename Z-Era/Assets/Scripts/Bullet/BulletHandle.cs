@@ -10,15 +10,8 @@ public class BulletHandle : MonoBehaviour
     // 子弹命中检测使用的图层。
     // 默认只检测 Zombie 层，避免射线打到玩家、武器、场景等无关碰撞体。
     [SerializeField]
-    [Tooltip("射线检测的图层，留空则默认检测除 Player/Weapon/Bullet/UI/Ignore Raycast/ZombieHearing 外的所有表面")]
+    [Tooltip("射线检测的图层，留空则默认检测除 Player/Weapon/Bullet/UI/Ignore Raycast/ZombieHearing/TaskTrigger 外的所有表面")]
     private LayerMask hitLayerMask;
-
-    // 预留的子弹扫描半径。
-    // 当前测试版本使用 Physics.Raycast，这个值暂时不参与检测；
-    // 以后换回 SphereCast 时会用到。
-    [SerializeField]
-    [Tooltip("子弹扫描半径")]
-    private float bulletRadius = 0.05f;
 
     [Tooltip("子弹对象池")]
     private BulletPool bulletPool;
@@ -67,16 +60,25 @@ public class BulletHandle : MonoBehaviour
                 "Bullet",
                 "UI",
                 "Ignore Raycast",
-                "ZombieHearing"
+                "ZombieHearing",
+                "TaskTrigger"
+            );
+        }
+
+        // 任务触发器图层只用于任务检测，子弹完全忽略：
+        // 射线不命中、物理不碰撞，命中处理也不会生成弹孔。
+        int taskTriggerLayer = LayerMask.NameToLayer("TaskTrigger");
+        if (taskTriggerLayer >= 0)
+        {
+            hitLayerMask &= ~(1 << taskTriggerLayer);
+            Physics.IgnoreLayerCollision(
+                gameObject.layer,
+                taskTriggerLayer,
+                true
             );
         }
 
         // 仅用于测试，确认图层配置无误后可以删除
-        Debug.Log(
-            $"{name} hitLayerMask={hitLayerMask.value}, " +
-            $"bulletRadius={bulletRadius}, " +
-            $"zombieLayer={LayerMask.NameToLayer("Zombie")}"
-        );
     }
 
     private void OnEnable()
@@ -163,10 +165,20 @@ public class BulletHandle : MonoBehaviour
 
     private void HandleHit(Collider hitCollider, Vector3 hitPoint, Vector3 hitNormal)
     {
+        if (IsOnTaskTriggerLayer(hitCollider.gameObject.layer))
+        {
+            return;
+        }
+
         isColliding = true;
 
         // 仅用于测试，确认命中后可以删除
-        Debug.Log($"Bullet hit: {hitCollider.name}");
+
+        // 训练场墙面：额外留下红色正方体线框，方便查看弹着点分布
+        if (IsOnTrainingGroundWallLayer(hitCollider.gameObject.layer))
+        {
+            BulletHitMarkerManager.Spawn(hitPoint, hitNormal);
+        }
 
         ApplyDamage(hitCollider, hitPoint);
 
@@ -177,9 +189,12 @@ public class BulletHandle : MonoBehaviour
         {
             zombieEffects.PlayHitEffect(hitPoint, hitNormal);
         }
-        else
+        else if (!IsOnNpcLayer(hitCollider.gameObject.layer) &&
+                 !IsOnTrainingGroundWallLayer(hitCollider.gameObject.layer))
         {
             // 非 Zombie 表面不造成伤害，在命中点留下弹孔贴花。
+            // NPC 层的角色例外：角色会移动，贴花跟着走很违和；
+            // 训练场墙面例外：只留命中线框，不生成弹孔。
             BulletHoleManager.Spawn(
                 hitPoint,
                 hitNormal,
@@ -190,10 +205,53 @@ public class BulletHandle : MonoBehaviour
         RecycleBullet();
     }
 
+    // 命中物是否处于 NPC 层。层号只查询一次并缓存；
+    // 项目里没有 NPC 层时恒为 false，不影响其他表面。
+    private static int npcLayer = int.MinValue;
+
+    private static bool IsOnNpcLayer(int layer)
+    {
+        if (npcLayer == int.MinValue)
+        {
+            npcLayer = LayerMask.NameToLayer("NPC");
+        }
+
+        return npcLayer >= 0 && layer == npcLayer;
+    }
+
+    // 命中物是否处于训练场墙面层。层号只查询一次并缓存；
+    // 项目里没有该层时恒为 false，不影响其他表面的命中表现。
+    private static int trainingGroundWallLayer = int.MinValue;
+
+    private static bool IsOnTrainingGroundWallLayer(int layer)
+    {
+        if (trainingGroundWallLayer == int.MinValue)
+        {
+            trainingGroundWallLayer =
+                LayerMask.NameToLayer("TrainingGroundWall");
+        }
+
+        return trainingGroundWallLayer >= 0 && layer == trainingGroundWallLayer;
+    }
+
+    // 任务触发器图层只查询一次并缓存；项目里没有该层时恒为 false。
+    private static int taskTriggerLayer = int.MinValue;
+
+    private static bool IsOnTaskTriggerLayer(int layer)
+    {
+        if (taskTriggerLayer == int.MinValue)
+        {
+            taskTriggerLayer = LayerMask.NameToLayer("TaskTrigger");
+        }
+
+        return taskTriggerLayer >= 0 && layer == taskTriggerLayer;
+    }
+
     // 物理碰撞兜底：如果以后有普通 Collider 的目标，仍然可以处理
     private void OnCollisionEnter(Collision collision)
     {
-        if (isColliding)
+        if (isColliding ||
+            IsOnTaskTriggerLayer(collision.collider.gameObject.layer))
         {
             return;
         }
@@ -206,7 +264,8 @@ public class BulletHandle : MonoBehaviour
     // 高速子弹主要由 FixedUpdate() 中的 Raycast 负责。
     private void OnTriggerEnter(Collider other)
     {
-        if (isColliding)
+        if (isColliding ||
+            IsOnTaskTriggerLayer(other.gameObject.layer))
         {
             return;
         }

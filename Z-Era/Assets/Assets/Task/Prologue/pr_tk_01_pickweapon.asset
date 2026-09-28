@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2904c0d84713cc4a44aa91d5036d8294, type: 3}
+  m_Name: pr_tk_01_pickweapon
+  m_EditorClassIdentifier: 
+  questId: pr_tk_01
+  title: 
+  description: 
+  objectives:
+  - objectiveId: pr_tk_01_pickweapon
+    description: "\u62FE\u53D6\u6B66\u5668\u7BB1\u91CC\u7684\u624B\u67AA"
+    requiredAmount: 1
+  prerequisiteQuestIds: []
+  requiredFlags: []
+  forbiddenFlags: []
+  flagsToSetOnAccept:
+  - pr_tk_01_unfinished
+  flagsToSetOnComplete:
+  - pr_tk_01_finished
+  onAccept:
+    m_PersistentCalls:
+      m_Calls: []
+  onComplete:
+    m_PersistentCalls:
+      m_Calls: []

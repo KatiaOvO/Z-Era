@@ -544,9 +544,19 @@ public class WeaponController : MonoBehaviour
             isReload &&
             currentMagazineAmmo == 0)
         {
+            // 快照换弹开始时的弹药（此刻尚未被 HandleAmmo 补满），
+            // 供 WeaponHUD 计算填充起点。
+            ReloadStartMagazineAmmo = currentMagazineAmmo;
+            ReloadStartCarriedAmmo = currentCarriedAmmo;
+
+            // 第三个参数强制把状态进度归零：
+            // Play 重入一个已经在播放（或被对话中断后卡在
+            // 高进度）的换弹状态时不会重置 normalizedTime，
+            // 换弹动画会从残留进度直接跳到结束。
             animator.Play(
                 "ReloadOutOfAmmo",
-                currentAnimatorLayer
+                currentAnimatorLayer,
+                0f
             );
 
             weaponEffects.ReloadEffects();
@@ -556,14 +566,25 @@ public class WeaponController : MonoBehaviour
             isReload &&
             currentMagazineAmmo > 0)
         {
+            // 快照换弹开始时的弹药（此刻尚未被 HandleAmmo 补满），
+            // 供 WeaponHUD 计算填充起点。
+            ReloadStartMagazineAmmo = currentMagazineAmmo;
+            ReloadStartCarriedAmmo = currentCarriedAmmo;
+
             animator.Play(
                 "ReloadLeftAmmo",
-                currentAnimatorLayer
+                currentAnimatorLayer,
+                0f
             );
 
             weaponEffects.ReloadEffects();
         }
     }
+
+    // 换弹开始瞬间（补满之前）的弹药快照，
+    // WeaponHUD 用它计算红条的起始填充量。
+    public int ReloadStartMagazineAmmo { get; private set; }
+    public int ReloadStartCarriedAmmo { get; private set; }
 
     private void TryStartKnifeAttack(
         int animatorLayer
