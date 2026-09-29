@@ -78,6 +78,31 @@ public class BulletHandle : MonoBehaviour
             );
         }
 
+        // Player/Weapon 图层子弹完全无碰撞直接穿过：
+        // 射线检测已排除这两层，物理碰撞也一并关掉。
+        // 出膛瞬间子弹碰撞体贴着玩家 CharacterController 与
+        // 武器碰撞体，CharacterController 的出穿解算会把玩家
+        // 推开（朝下开枪时尤其明显），必须彻底免碰撞。
+        int playerLayerIndex = LayerMask.NameToLayer("Player");
+        if (playerLayerIndex >= 0)
+        {
+            Physics.IgnoreLayerCollision(
+                gameObject.layer,
+                playerLayerIndex,
+                true
+            );
+        }
+
+        int weaponLayerIndex = LayerMask.NameToLayer("Weapon");
+        if (weaponLayerIndex >= 0)
+        {
+            Physics.IgnoreLayerCollision(
+                gameObject.layer,
+                weaponLayerIndex,
+                true
+            );
+        }
+
         // 仅用于测试，确认图层配置无误后可以删除
     }
 
@@ -174,10 +199,25 @@ public class BulletHandle : MonoBehaviour
 
         // 仅用于测试，确认命中后可以删除
 
-        // 训练场墙面：额外留下红色正方体线框，方便查看弹着点分布
+        // 训练场墙面：额外留下红色正方体线框，方便查看弹着点分布，
+        // 线框跟随被击中的物体移动
         if (IsOnTrainingGroundWallLayer(hitCollider.gameObject.layer))
         {
-            BulletHitMarkerManager.Spawn(hitPoint, hitNormal);
+            BulletHitMarkerManager.Spawn(
+                hitPoint,
+                hitNormal,
+                hitCollider.transform
+            );
+        }
+
+        // 训练场靶子：统计子弹命中次数，达到需求后由
+        // PrologueController 通过事件驱动靶子倒下
+        PrologueTarget prologueTarget =
+            hitCollider.GetComponentInParent<PrologueTarget>();
+
+        if (prologueTarget != null)
+        {
+            prologueTarget.RegisterHit(hitCollider);
         }
 
         ApplyDamage(hitCollider, hitPoint);

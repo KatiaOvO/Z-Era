@@ -127,7 +127,11 @@ public class BulletHitMarkerManager : MonoBehaviour
     }
 
     // 由 BulletHandle 在命中 TrainingGroundWall 表面时调用。
-    public static void Spawn(Vector3 position, Vector3 normal)
+    public static void Spawn(
+        Vector3 position,
+        Vector3 normal,
+        Transform surface
+    )
     {
         if (Instance == null)
         {
@@ -141,10 +145,14 @@ public class BulletHitMarkerManager : MonoBehaviour
             return;
         }
 
-        Instance.CreateMarker(position, normal);
+        Instance.CreateMarker(position, normal, surface);
     }
 
-    private void CreateMarker(Vector3 position, Vector3 normal)
+    private void CreateMarker(
+        Vector3 position,
+        Vector3 normal,
+        Transform surface
+    )
     {
         GameObject marker = new GameObject("Bullet Hit Marker");
 
@@ -172,7 +180,31 @@ public class BulletHitMarkerManager : MonoBehaviour
         );
 
         marker.transform.localScale = Vector3.one * markerSize;
-        marker.transform.SetParent(transform, true);
+
+        // 跟随命中对象：挂到被击物体上随其移动、旋转、销毁。
+        // 父物体缩放不均匀时，SetParent 无法精确补偿，
+        // 线框会被剪切变形，这种表面退化为挂在管理器节点下。
+        Vector3 surfaceScale = surface.lossyScale;
+
+        float maxAxis = Mathf.Max(
+            Mathf.Abs(surfaceScale.x),
+            Mathf.Abs(surfaceScale.y),
+            Mathf.Abs(surfaceScale.z)
+        );
+
+        float minAxis = Mathf.Min(
+            Mathf.Abs(surfaceScale.x),
+            Mathf.Abs(surfaceScale.y),
+            Mathf.Abs(surfaceScale.z)
+        );
+
+        bool surfaceScaleUniform =
+            minAxis > 0f && maxAxis / minAxis <= 1.02f;
+
+        marker.transform.SetParent(
+            surfaceScaleUniform ? surface : transform,
+            true
+        );
 
         // 复用弹孔的到期销毁逻辑
         BulletHole bulletHole = marker.AddComponent<BulletHole>();

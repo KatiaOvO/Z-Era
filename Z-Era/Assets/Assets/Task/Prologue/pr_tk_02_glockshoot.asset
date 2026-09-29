@@ -10,25 +10,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2904c0d84713cc4a44aa91d5036d8294, type: 3}
-  m_Name: pr_tk_01_pickweapon
+  m_Name: pr_tk_02_glockshoot
   m_EditorClassIdentifier: 
-  questId: pr_tk_01
+  questId: pr_tk_02
   title: 
   description: 
   objectives:
-  - objectiveId: pr_tk_01_pickweapon
-    description: "\u62FE\u53D6\u6B66\u5668\u7BB1\u91CC\u7684\u624B\u67AA"
+  - objectiveId: pr_tk_02_glockshoottarget
+    description: "\u5728\u6307\u5B9A\u5C04\u51FB\u533A\u57DF\u51FB\u5012\u8BAD\u7EC3\u573A\u4E2D\u95F4\u7684\u9776\u5B50"
     requiredAmount: 1
-  - objectiveId: pr_tk_01_talktoharper
+  - objectiveId: pr_tk_02_talktoharper
     description: "\u5411\u54C8\u73C0\u4E2D\u58EB\u6C47\u62A5"
     requiredAmount: 1
-  prerequisiteQuestIds: []
+  prerequisiteQuestIds:
+  - pr_tk_01
   requiredFlags: []
   forbiddenFlags: []
   flagsToSetOnAccept:
-  - pr_tk_01_pickweapon_unfinished
-  flagsToSetOnComplete:
-  - pr_tk_01_all_finished
+  - pr_tk_02_glockshoottarget_unfinished
+  flagsToSetOnComplete: []
   onAccept:
     m_PersistentCalls:
       m_Calls: []

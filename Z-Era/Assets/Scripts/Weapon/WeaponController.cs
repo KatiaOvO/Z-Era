@@ -163,6 +163,9 @@ public class WeaponController : MonoBehaviour
     private bool hasAppliedKnifeDamageThisAttack;
     private Transform playerRoot;
 
+    // 玩家控制器引用，用于感知移动锁（锁定时不再驱动 walk 动画）
+    private PlayerController playerController;
+
     #endregion
 
     #region 射击
@@ -317,6 +320,31 @@ public class WeaponController : MonoBehaviour
         ResolveKnifeAttackSettings();
     }
 
+    private void OnEnable()
+    {
+        // 运行时拾取/更换的武器挂到玩家身上后兜底补挂：
+        // 忽略武器碰撞体与玩家 CharacterController 的碰撞，
+        // 避免朝下瞄准时武器插进地面，CharacterController 的
+        // 出穿解算把玩家推开
+        CharacterController characterController =
+            GetComponentInParent<CharacterController>();
+
+        if (characterController == null)
+        {
+            return;
+        }
+
+        foreach (Collider collider in
+            GetComponentsInChildren<Collider>(true))
+        {
+            Physics.IgnoreCollision(
+                characterController,
+                collider,
+                true
+            );
+        }
+    }
+
     private void OnDisable()
     {
         EndKnifeAttackTracking(true);
@@ -390,6 +418,10 @@ public class WeaponController : MonoBehaviour
         playerRoot = playerStamina != null
             ? playerStamina.transform
             : transform.root;
+
+        playerController = playerRoot != null
+            ? playerRoot.GetComponentInParent<PlayerController>()
+            : GetComponentInParent<PlayerController>();
     }
 
     private void ParameterJudgment()
@@ -400,7 +432,14 @@ public class WeaponController : MonoBehaviour
         float v =
             Input.GetAxisRaw("Vertical");
 
-        isWalk = h != 0f || v != 0f;
+        // 玩家移动被剧情锁定时不再驱动 walk 动画，
+        // 否则锁移动后角色原地播放走路动画
+        bool movementLocked =
+            playerController != null &&
+            playerController.movementLocked;
+
+        isWalk =
+            !movementLocked && (h != 0f || v != 0f);
 
         isSingleFire =
             Input.GetKeyDown(KeyCode.Mouse0);

@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 /// <summary>
 /// NPC 对话触发器，挂在人物根物体上。
@@ -72,6 +75,17 @@ public class NPCDialogue : MonoBehaviour
     [Tooltip("播放到该对话节点 ID 时，读取节点 Speaker Name 并更新提示")]
     [SerializeField]
     private string nameRevealNodeId;
+
+    [Header("朝向限制")]
+
+    [Tooltip("是否要求玩家站在 NPC 朝向的指定角度范围内才能对话（防止绕到 NPC 背后对话）")]
+    [SerializeField]
+    private bool requireForwardZone = true;
+
+    [Tooltip("允许对话的半角（度）：玩家相对 NPC 正前方偏离不超过该角度时可对话，180 等于不限制")]
+    [Range(0f, 180f)]
+    [SerializeField]
+    private float interactHalfAngle = 90f;
 
     private Camera cachedCamera;
     private DialogueRunner dialogueRunner;
@@ -256,8 +270,7 @@ public class NPCDialogue : MonoBehaviour
     }
 
     private bool CanInteract()
-    {
-        Ray ray = cachedCamera.ScreenPointToRay(
+    {        Ray ray = cachedCamera.ScreenPointToRay(
             new Vector3(
                 Screen.width * 0.5f,
                 Screen.height * 0.5f,
@@ -278,7 +291,100 @@ public class NPCDialogue : MonoBehaviour
         NPCDialogue owner =
             hit.collider.GetComponentInParent<NPCDialogue>();
 
-        return owner == this;
+        if (owner != this)
+        {
+            return false;
+        }
+
+        // 朝向限制：玩家必须站在 NPC 正前方 interactHalfAngle
+        // 度的扇形范围内。水平面计算，忽略高度差，
+        // 避免玩家站得稍高/稍低时被误判到区域外。
+        if (requireForwardZone && interactHalfAngle < 180f)
+        {
+            Vector3 npcForward = transform.forward;
+            Vector3 toPlayer =
+                cachedCamera.transform.position - transform.position;
+
+            npcForward.y = 0f;
+            toPlayer.y = 0f;
+
+            // 水平投影接近零（玩家在正上/正下方）时方向未定义，
+            // 按不通过处理。
+            if (toPlayer.sqrMagnitude < 0.0001f ||
+                Vector3.Angle(npcForward, toPlayer) >
+                    interactHalfAngle)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // 在 Scene 视图可视化对话朝向区域：半透明扇面 + 边界线 +
+    // 正方向指示线，半径取对话交互距离，仅选中本物体时绘制。
+    // 编辑器专用，不参与打包。
+    private void OnDrawGizmosSelected()
+    {
+#if UNITY_EDITOR
+        if (!requireForwardZone)
+        {
+            return;
+        }
+
+        Vector3 forward = transform.forward;
+        forward.y = 0f;
+
+        // 根节点朝向垂直于水平面时退化，兜底用世界前方
+        if (forward.sqrMagnitude < 0.0001f)
+        {
+            forward = Vector3.forward;
+        }
+
+        forward.Normalize();
+
+        float radius = Mathf.Max(0.5f, interactDistance);
+        Vector3 center = transform.position;
+
+        Quaternion leftEdge =
+            Quaternion.AngleAxis(-interactHalfAngle, Vector3.up);
+
+        Handles.color = new Color(1f, 0.92f, 0.35f, 0.15f);
+        Handles.DrawSolidArc(
+            center,
+            Vector3.up,
+            leftEdge * forward,
+            interactHalfAngle * 2f,
+            radius
+        );
+
+        Handles.color = new Color(1f, 0.92f, 0.35f, 0.9f);
+        Handles.DrawWireArc(
+            center,
+            Vector3.up,
+            leftEdge * forward,
+            interactHalfAngle * 2f,
+            radius
+        );
+
+        Gizmos.color = new Color(1f, 0.92f, 0.35f, 0.9f);
+        Gizmos.DrawLine(
+            center,
+            center + leftEdge * forward * radius
+        );
+        Gizmos.DrawLine(
+            center,
+            center + Quaternion.AngleAxis(
+                interactHalfAngle, Vector3.up) * forward * radius
+        );
+
+        // 正方向指示线略长一截，便于辨认扇形朝向
+        Gizmos.color = Color.white;
+        Gizmos.DrawLine(
+            center,
+            center + forward * radius * 1.15f
+        );
+#endif
     }
 
     private void UpdatePrompt(

@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 99bd3cb82ac25b64bb8347d92bafc97d, type: 3}
-  m_Name: pr_dia_harper_01_tk01_repeat
+  m_Name: pr_dia_harper_02_tk02_repeat
   m_EditorClassIdentifier: 
   startNodeId: harper_01
   nodes:
   - nodeId: harper_01
-    speakerName: "\u54C8\u73C0\u4E2D\u58EB"
+    speakerName: 
     speakerColor: {r: 1, g: 1, b: 1, a: 0}
     portrait: {fileID: 0}
-    text: "\u65B0\u5175\uFF0C\u53BB\u628A\u6B66\u5668\u7BB1\u91CC\u7684\u624B\u67AA\u62FF\u8D77\u6765\uFF01"
+    text: "\u65B0\u5175\uFF0C\u53BB\u628A\u8BAD\u7EC3\u573A\u4E2D\u95F4\u7684\u9776\u5B50\u51FB\u5012\uFF01"
     choices: []

@@ -39,7 +39,7 @@ MonoBehaviour:
     portrait: {fileID: 0}
     text: "\u4F60\u53EF\u4EE5\u53EB\u6211\u54C8\u73C0\u4E2D\u58EB\uFF0C\u4ECE\u4ECA\u5929\u5F00\u59CB\u6211\u5C06\u8D1F\u8D23\u8BAD\u7EC3\u65B0\u5175\u3002\u73B0\u5728\u5148\u53BB\u628A\u6B66\u5668\u7BB1\u91CC\u7684\u624B\u67AA\u62FF\u8D77\u6765\u3002\r"
     choices:
-    - buttonText: "\u6536\u5230\u3002"
+    - buttonText: "\u662F\u7684\uFF0C\u957F\u5B98\u3002"
       requiredFlags: []
       forbiddenFlags: []
       nextNodeId: 

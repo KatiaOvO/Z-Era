@@ -70,6 +70,16 @@ public class QuestHUDController : MonoBehaviour
     [SerializeField]
     private float completeSoundVolume = 1f;
 
+    [Header("完成表现")]
+
+    [Tooltip("任务完成后指引文本使用的颜色，显示下一个任务时恢复原色")]
+    [SerializeField]
+    private Color completionTextColor =
+        new Color(0.45f, 1f, 0.45f, 1f);
+
+    // 指引文本的原色，Awake 时记录，显示新任务时恢复。
+    private Color guideBaseColor = Color.white;
+
     // OnEnable 缓存的管理器引用，OnDisable 退订时使用，
     // 避免运行末尾再触发管理器的自动创建。
     private QuestManager manager;
@@ -124,6 +134,11 @@ public class QuestHUDController : MonoBehaviour
             {
                 checkBaseAlpha = checkImage.color.a;
             }
+        }
+
+        if (guideText != null)
+        {
+            guideBaseColor = guideText.color;
         }
 
         // 运行时兜底：填充动画要求勾的 Image 为 Filled 类型，
@@ -217,21 +232,45 @@ public class QuestHUDController : MonoBehaviour
 
         HideCheck();
 
-        // HUD 所在场景中途加载（任务早已接取）时，
-        // 直接显示最近接取的活动任务，不做入场动画。
+        // HUD 所在 Canvas 会被 DialogueRunner 在对话期间整体禁用，
+        // 期间发生的接取/完成事件全部错过。重新启用时按管理器
+        // 当前状态对齐，而不是沿用禁用前的残留显示。
+        if (displayedQuest != null &&
+            QuestManager.GetQuestState(displayedQuest.QuestId) ==
+                QuestManager.QuestState.Completed)
+        {
+            // 显示中的任务已在对话期间完成：先刷新为完成态文本
+            // 并变绿，再补播完成演出，演出收尾会自动切换到
+            // 下一个进行中的任务。
+            RefreshDisplay();
+            SetGuideTextColor(completionTextColor);
+
+            activeAnimation = StartCoroutine(CompletedSequence());
+            return;
+        }
+
+        if (displayedQuest != null)
+        {
+            // 任务仍在进行中：刷新对话期间错过的进度。
+            RefreshDisplay();
+            SetGuideTextColor(guideBaseColor);
+            SetRowAlphaImmediate(1f);
+            return;
+        }
+
+        // 没有显示中的任务：显示最近接取的活动任务，不做入场动画。
         IReadOnlyList<QuestAsset> activeQuests =
             QuestManager.ActiveQuests;
 
-        if (displayedQuest == null && activeQuests.Count > 0)
+        if (activeQuests.Count > 0)
         {
             displayedQuest = activeQuests[activeQuests.Count - 1];
 
-            HideCheck();
-
             RefreshDisplay();
+            SetGuideTextColor(guideBaseColor);
             SetRowAlphaImmediate(1f);
         }
-        else if (displayedQuest == null)
+        else
         {
             SetRowAlphaImmediate(0f);
         }
@@ -253,6 +292,10 @@ public class QuestHUDController : MonoBehaviour
             StopCoroutine(activeAnimation);
             activeAnimation = null;
         }
+
+        // 排队任务在禁用期间无法保证时效，重新启用时
+        // 由 OnEnable 的对账逻辑按管理器状态重新决定显示。
+        pendingQuest = null;
     }
 
     private void OnQuestAccepted(QuestAsset quest)
@@ -292,6 +335,16 @@ public class QuestHUDController : MonoBehaviour
                 StopCoroutine(activeAnimation);
             }
 
+            // 先把文本刷新为本目标达成时的进度（如 10/10）再开始
+            // 演出：演出内不再刷新文本，绿色阶段会一直显示到切下一个
+            // 目标为止，若沿用旧文本就会出现"9/10 就变绿"的观感。
+            RefreshGuideText(objective, current);
+
+            if (ringImage != null)
+            {
+                ringImage.fillAmount = GetOverallProgress();
+            }
+
             activeAnimation = StartCoroutine(
                 ObjectiveCompletedSequence()
             );
@@ -300,6 +353,7 @@ public class QuestHUDController : MonoBehaviour
         }
 
         RefreshDisplay();
+        SetGuideTextColor(guideBaseColor);
     }
 
     // 任务的所有目标是否都已达标。
@@ -345,6 +399,10 @@ public class QuestHUDController : MonoBehaviour
             checkObject.SetActive(true);
         }
 
+        // 目标达成的瞬间指引文本变绿，
+        // 切换到下一个目标文本时恢复原色。
+        SetGuideTextColor(completionTextColor);
+
         if (checkImage != null)
         {
             checkImage.fillAmount = 0f;
@@ -366,6 +424,7 @@ public class QuestHUDController : MonoBehaviour
         yield return FadeGuideText(0f, fadeOutDuration);
 
         RefreshDisplay();
+        SetGuideTextColor(guideBaseColor);
 
         yield return FadeGuideText(1f, fadeInDuration);
 
@@ -381,8 +440,38 @@ public class QuestHUDController : MonoBehaviour
             return;
         }
 
-        // 文本刷新为完成态（显示最后一个目标），圆环充满，勾弹跳。
+        // 临时诊断：完成瞬间的进度快照与文本内容，确认后删除
+        string snapshot = "";
+
+        foreach (
+            QuestAsset.QuestObjective objective
+                in quest.Objectives
+        )
+        {
+            if (objective == null)
+            {
+                continue;
+            }
+
+            snapshot += objective.objectiveId + "=" +
+                QuestManager.GetObjectiveCurrent(
+                    quest.QuestId,
+                    objective.objectiveId
+                ) + "/" + objective.requiredAmount + " ";
+        }
+
+        Debug.Log(
+            "[QuestHUD 诊断] 任务完成：" + quest.QuestId +
+            " [" + snapshot + "]" +
+            "，完成时文本=" + (guideText != null
+                ? guideText.text
+                : "null"),
+            this
+        );
+
+        // 文本刷新为完成态（显示最后一个目标），变绿，圆环充满。
         RefreshDisplay();
+        SetGuideTextColor(completionTextColor);
 
         if (ringImage != null)
         {
@@ -493,12 +582,36 @@ public class QuestHUDController : MonoBehaviour
         HideCheck();
 
         RefreshDisplay();
+        SetGuideTextColor(guideBaseColor);
 
         yield return FadeRow(1f, fadeInDuration);
 
         // 协程自然结束（含被 CompletedSequence 嵌套调用的情况），
         // 清空引用让后续接取不再被误判为“演出进行中”。
         activeAnimation = null;
+    }
+
+    // 把指引文本刷新为指定目标的当前进度（x/y）。
+    // RefreshDisplay 总是跳到第一个未完成的目标，无法显示
+    // 刚达成的那个，目标完成演出需要用它先定格完成态文本。
+    private void RefreshGuideText(
+        QuestAsset.QuestObjective objective,
+        int current
+    )
+    {
+        if (guideText == null || objective == null)
+        {
+            return;
+        }
+
+        guideText.text = objective.requiredAmount > 1
+            ? string.Format(
+                guideFormat,
+                objective.description,
+                current,
+                objective.requiredAmount
+            )
+            : objective.description;
     }
 
     // 刷新指引文本与圆环填充：显示第一个未完成的目标；
@@ -656,6 +769,19 @@ public class QuestHUDController : MonoBehaviour
         }
 
         guideText.alpha = target;
+    }
+
+    // 设置指引文本颜色，保留当前透明度，
+    // 避免打断进行中的淡入淡出。
+    private void SetGuideTextColor(Color color)
+    {
+        if (guideText == null)
+        {
+            return;
+        }
+
+        color.a = guideText.color.a;
+        guideText.color = color;
     }
 
     // 立即设置整行透明度（场景中途加载等无动画场景使用）。

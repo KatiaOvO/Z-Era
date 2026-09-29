@@ -57,6 +57,9 @@ public class PlayerController : MonoBehaviour
     public float mouseSensitivity = 2.0f;
     public float maxLookAngle = 80.0f;
 
+    [Tooltip("是否锁定移动（剧情演出用）：锁定时移动输入清零，视角与射击不受影响")]
+    public bool movementLocked;
+
     private float rotationX = 0.0f;
 
     [Header("后坐力恢复")]
@@ -86,6 +89,28 @@ public class PlayerController : MonoBehaviour
         {
             noiseEmitter = GetComponent<NoiseEmitter>();
         }
+
+        IgnoreSelfCollisions();
+    }
+
+    // 玩家身上除 CharacterController 外的碰撞体（武器模型等，
+    // 含未激活的子物体）全部与其忽略碰撞：朝下开枪时武器模型
+    // 插进脚下地面，CharacterController 的自动出穿会把玩家推开。
+    // 运行时拾取更换的武器由 WeaponController.OnEnable 兜底补挂。
+    private void IgnoreSelfCollisions()
+    {
+        foreach (Collider collider in
+            GetComponentsInChildren<Collider>(true))
+        {
+            if (collider != characterController)
+            {
+                Physics.IgnoreCollision(
+                    characterController,
+                    collider,
+                    true
+                );
+            }
+        }
     }
 
     void Update()
@@ -94,8 +119,39 @@ public class PlayerController : MonoBehaviour
         PlayerMoveController();
     }
 
+    // 进入锁定瞬间记录的位置，锁定期间每帧钉回：
+    // 朝下开枪时武器模型会与地面/踏板重叠，CharacterController
+    // 的自动出穿会在 Move 里把玩家推开，仅清输入挡不住这种位移
+    private Vector3 lockedPosition;
+    private bool positionFrozen;
+
     private void PlayerMoveController()
     {
+        // 锁定移动：除输入清零外直接钉死位置，保证锁定期间
+        // 玩家无法通过任何方式移动（出穿、外力一律无效）
+        if (movementLocked)
+        {
+            if (!positionFrozen)
+            {
+                lockedPosition = transform.position;
+                positionFrozen = true;
+            }
+
+            transform.position = lockedPosition;
+            verticalVelocity = 0f;
+
+            // 行走途中被锁定时可能还在播放脚步声，
+            // 立即停止而不是等这一段音频自然播完
+            if (audioSource != null && audioSource.isPlaying)
+            {
+                audioSource.Stop();
+            }
+
+            return;
+        }
+
+        positionFrozen = false;
+
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
 
