@@ -293,6 +293,89 @@ public class QuestManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 直接把指定目标的进度设置为指定值（可清零/回退），
+    /// 达到需求量时自动完成整个任务。用于"可失败"的任务：
+    /// 失败时把 HUD 与任务系统同步归零。
+    /// </summary>
+    public static void SetProgress(
+        string questId,
+        string objectiveId,
+        int value
+    )
+    {
+        if (string.IsNullOrWhiteSpace(questId) ||
+            string.IsNullOrWhiteSpace(objectiveId))
+        {
+            Debug.LogWarning(
+                "QuestManager：questId 或 objectiveId 为空，忽略进度设置。"
+            );
+
+            return;
+        }
+
+        QuestManager manager = Instance;
+
+        if (GetQuestState(questId) != QuestState.Active)
+        {
+            Debug.LogWarning(
+                $"QuestManager：任务 '{questId}' 不在进行中，忽略进度设置。",
+                manager
+            );
+
+            return;
+        }
+
+        QuestAsset asset = manager.questAssets[questId];
+        QuestAsset.QuestObjective objective =
+            asset.GetObjective(objectiveId);
+
+        if (objective == null)
+        {
+            Debug.LogError(
+                $"QuestManager：任务 '{questId}' 不存在目标 " +
+                    $"'{objectiveId}'，忽略进度设置。",
+                asset
+            );
+
+            return;
+        }
+
+        string key = ProgressKey(questId, objectiveId);
+
+        int previous = manager.objectiveProgress.TryGetValue(
+            key,
+            out int stored
+        )
+            ? stored
+            : 0;
+
+        int current = Mathf.Clamp(
+            value,
+            0,
+            objective.requiredAmount
+        );
+
+        if (current == previous)
+        {
+            return;
+        }
+
+        manager.objectiveProgress[key] = current;
+
+        manager.ObjectiveUpdated?.Invoke(
+            asset,
+            objective,
+            current,
+            objective.requiredAmount
+        );
+
+        if (current >= objective.requiredAmount)
+        {
+            CheckQuestComplete(asset);
+        }
+    }
+
+    /// <summary>
     /// 直接把指定目标置为完成（内部换算为一次足量进度上报）。
     /// </summary>
     public static void SetObjectiveComplete(

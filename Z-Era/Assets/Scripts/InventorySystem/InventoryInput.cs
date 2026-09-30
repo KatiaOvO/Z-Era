@@ -149,9 +149,21 @@ public class InventoryInput : MonoBehaviour
 
     private void Update()
     {
+        // 序章训练场门控（其他场景 Active=false 不干预）：
+        // pr_tk_09 的拾取武器模型目标完成前禁止打开背包，
+        // 关闭操作（B/Esc）不受限制
+        bool togglePressed = Input.GetKeyDown(toggleKey);
+
+        if (togglePressed && !isOpen &&
+            PrologueGameplayGates.Active &&
+            !PrologueGameplayGates.CanOpenInventory)
+        {
+            togglePressed = false;
+        }
+
         // InventoryInput 始终保持启用，负责监听开关和恢复异常关闭状态。
         // 背包打开期间 Esc 也可关闭；溶解未完成时关闭输入被忽略。
-        if (Input.GetKeyDown(toggleKey) ||
+        if (togglePressed ||
             (isOpen && allowEscapeToClose &&
                 Input.GetKeyDown(KeyCode.Escape)))
         {

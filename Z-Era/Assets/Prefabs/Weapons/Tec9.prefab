@@ -135,7 +135,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7273c3d062d9cbb4bbd018eb41235b51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  category: 1
   interactionDistanceOverride: 0
+  unlimitedInteractions: 0
+  maxInteractions: 1
+  weaponName: 
+  flagsToSetOnPickup: []
+  onPickedUp:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1251351516405412
 GameObject:
   m_ObjectHideFlags: 0

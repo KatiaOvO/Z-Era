@@ -350,7 +350,8 @@ public class WeaponEffects : MonoBehaviour
             bulletInstance.Launch(
                 shootDirection * bulletSpeed,
                 gunData.damage,
-                weaponController.gameObject
+                weaponController.gameObject,
+                weaponController.CurrentBurstId
             );
         }
 

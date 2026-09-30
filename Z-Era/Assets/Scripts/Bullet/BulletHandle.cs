@@ -33,6 +33,16 @@ public class BulletHandle : MonoBehaviour
     private float bulletDamage;
     private GameObject bulletAttacker;
 
+    // 发射时所属的长按轮次编号（由 WeaponController 递增），
+    // 用于 tk07 按"开火时刻"归属子弹命中。
+    public int BurstId { get; private set; }
+
+    // 任意子弹发射/落定（命中或超时回收）时广播。
+    // tk07 用它们统计"本轮长按射出且尚未落定"的子弹数，
+    // 松手后要等在飞子弹全部落定才判定本轮失败。
+    public static event System.Action<BulletHandle> BulletLaunched;
+    public static event System.Action<BulletHandle> BulletSettled;
+
     public float BulletDamage => bulletDamage;
 
     private void Awake()
@@ -217,7 +227,7 @@ public class BulletHandle : MonoBehaviour
 
         if (prologueTarget != null)
         {
-            prologueTarget.RegisterHit(hitCollider);
+            prologueTarget.RegisterHit(hitCollider, BurstId);
         }
 
         ApplyDamage(hitCollider, hitPoint);
@@ -353,11 +363,18 @@ public class BulletHandle : MonoBehaviour
     }
 
     // 由 WeaponEffects 调用，传入子弹速度、伤害和攻击者
-    public void Launch(Vector3 velocity, float damage, GameObject attacker)
+    public void Launch(
+        Vector3 velocity,
+        float damage,
+        GameObject attacker,
+        int burstId = 0)
     {
         bulletVelocity = velocity;
         bulletDamage = damage;
         bulletAttacker = attacker;
+        BurstId = burstId;
+
+        BulletLaunched?.Invoke(this);
     }
 
     // 回收条件：已经命中，或者超过最大存活时间
@@ -367,6 +384,10 @@ public class BulletHandle : MonoBehaviour
         {
             return;
         }
+
+        // 先广播落定再回收：监听方（tk07 在飞子弹统计）据此
+        // 判断"本轮射出的子弹是否全部落定"
+        BulletSettled?.Invoke(this);
 
         if (bulletPool != null)
         {

@@ -265,5 +265,4 @@ MonoBehaviour:
   maxLifeTime: 5
   hitLayerMask:
     serializedVersion: 2
-    m_Bits: 147
-  bulletRadius: 0.05
+    m_Bits: 7315

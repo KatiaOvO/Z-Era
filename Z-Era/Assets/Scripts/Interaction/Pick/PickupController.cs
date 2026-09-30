@@ -19,9 +19,6 @@ public class PickupController : MonoBehaviour
 
     [Header("描边外观")]
 
-    [Tooltip("高亮描边的颜色（Alpha 为呼吸最满时的不透明度）")]
-    public Color outlineColor = new Color(1f, 0.8f, 0.2f, 1f);
-
     [Tooltip("高亮描边的线宽（像素），与观察距离无关")]
     [Range(0f, 20f)]
     public float outlineWidth = 6f;
@@ -51,9 +48,17 @@ public class PickupController : MonoBehaviour
     [SerializeField]
     private InventoryRadialView radialView;
 
+    [Tooltip("玩家武器所在根物体，弹药箱/弹匣在其子物体（含未激活）中查找 WeaponController 补充弹药；留空则用自身所在层级根节点")]
+    [SerializeField]
+    private Transform weaponRoot;
+
     private Camera cachedCamera;
-    private Material outlineMaterial;
     private AudioSource pickupAudioSource;
+
+    // 按颜色缓存的描边材质：不同分类的物品可同时高亮，
+    // 各自使用独立材质，呼吸脉动时统一改写透明度。
+    private readonly Dictionary<Color, Material> outlineMaterials =
+        new Dictionary<Color, Material>();
 
     private void Awake()
     {
@@ -112,18 +117,24 @@ public class PickupController : MonoBehaviour
 
         UpdateHighlights();
 
-        // 有道具处于高亮状态时，描边透明度按呼吸频率在 0 与颜色 Alpha 之间往复。
+        // 有道具处于高亮状态时，各分类描边材质的透明度按呼吸频率
+        // 在 0 与各自颜色 Alpha 之间往复。
         if (highlightedItems.Count > 0)
         {
             float pulse =
                 Mathf.Sin(Time.time * pulseSpeed * Mathf.PI * 2f) * 0.5f + 0.5f;
 
-            Color pulsingColor = outlineColor;
-            pulsingColor.a = outlineColor.a * pulse;
+            foreach (
+                KeyValuePair<Color, Material> outline in
+                    outlineMaterials
+            )
+            {
+                Color pulsingColor = outline.Key;
+                pulsingColor.a *= pulse;
 
-            outlineMaterial.SetColor("_OutlineColor", pulsingColor);
-
-            outlineMaterial.SetFloat("_OutlineWidth", outlineWidth);
+                outline.Value.SetColor("_OutlineColor", pulsingColor);
+                outline.Value.SetFloat("_OutlineWidth", outlineWidth);
+            }
         }
 
         if (CanPickItem(out PickableItem pickable))
@@ -239,6 +250,48 @@ public class PickupController : MonoBehaviour
 
     private void PickupItem(PickableItem item)
     {
+        // 先还原描边材质，避免描边跟随道具进入背包。
+        RemoveOutline(item);
+
+        // 拾取副作用（设置对话标记、上报任务进度等）在道具
+        // 入包/销毁/禁用前触发，监听方仍可访问道具本体。
+        item.NotifyPickedUp();
+
+        switch (item.category)
+        {
+            case PickupCategory.AmmoBox:
+                // 弹药箱：补满身上所有武器弹药，本体留在原地
+                // 不进背包也不消失；指定次数型耗尽后由
+                // PickableItem 自行禁用退出注册表。
+                RefillAllWeapons();
+                item.ConsumeInteraction();
+                break;
+
+            case PickupCategory.Magazine:
+                // 弹匣：按枪支名称索引补满对应武器弹药，
+                // 不进背包，拾取后本体消失。
+                RefillWeaponForMagazine(item);
+                Destroy(item.gameObject);
+                break;
+
+            default:
+                // 道具/武器/特殊收集品：移入背包，可打开库存查看。
+                MoveItemToInventory(item);
+                break;
+        }
+
+        if (pickupSound != null && pickupAudioSource != null)
+        {
+            pickupAudioSource.PlayOneShot(
+                pickupSound,
+                pickupSoundVolume
+            );
+        }
+    }
+
+    // 道具/武器/特殊收集品共用的入包流程。
+    private void MoveItemToInventory(PickableItem item)
+    {
         Transform container =
             radialView != null ? radialView.transform : null;
 
@@ -251,13 +304,6 @@ public class PickupController : MonoBehaviour
 
             return;
         }
-
-        // 先还原描边材质，避免描边跟随道具进入背包。
-        RemoveOutline(item);
-
-        // 拾取副作用（设置对话标记、上报任务进度等）在道具
-        // 入包禁用前触发，监听方仍可访问道具本体。
-        item.NotifyPickedUp();
 
         item.transform.SetParent(container, false);
         item.transform.localPosition = Vector3.zero;
@@ -285,14 +331,63 @@ public class PickupController : MonoBehaviour
         {
             collider.enabled = false;
         }
+    }
 
-        if (pickupSound != null && pickupAudioSource != null)
+    // 玩家身上的全部武器（含未激活的备用武器）。
+    private IEnumerable<WeaponController> GetPlayerWeapons()
+    {
+        Transform root =
+            weaponRoot != null ? weaponRoot : transform.root;
+
+        return root.GetComponentsInChildren<WeaponController>(
+            true
+        );
+    }
+
+    // 弹药箱：补满所有武器的弹匣与备弹。
+    private void RefillAllWeapons()
+    {
+        foreach (
+            WeaponController weapon in GetPlayerWeapons()
+        )
         {
-            pickupAudioSource.PlayOneShot(
-                pickupSound,
-                pickupSoundVolume
-            );
+            weapon.RefillAmmo();
         }
+    }
+
+    // 弹匣：按枪支名称索引补满对应武器；先精确匹配物体名，
+    // 未命中再退化为包含匹配，仍找不到则告警丢弃。
+    private void RefillWeaponForMagazine(PickableItem item)
+    {
+        string weaponName = item.ResolveMagazineWeaponName();
+
+        foreach (
+            WeaponController weapon in GetPlayerWeapons()
+        )
+        {
+            if (weapon.gameObject.name == weaponName)
+            {
+                weapon.RefillAmmo();
+                return;
+            }
+        }
+
+        foreach (
+            WeaponController weapon in GetPlayerWeapons()
+        )
+        {
+            if (weapon.gameObject.name.Contains(weaponName))
+            {
+                weapon.RefillAmmo();
+                return;
+            }
+        }
+
+        Debug.LogWarning(
+            "PickupController：弹匣未在玩家身上找到对应武器 " +
+                weaponName + "，弹药未补充。",
+            item
+        );
     }
 
     private void ClearHighlight()
@@ -308,27 +403,13 @@ public class PickupController : MonoBehaviour
 
     private void ApplyOutline(PickableItem item)
     {
+        Material outlineMaterial =
+            GetOutlineMaterial(item.OutlineColor);
+
         if (outlineMaterial == null)
         {
-            Shader outlineShader =
-                Shader.Find("Custom/Item Outline");
-
-            if (outlineShader == null)
-            {
-                Debug.LogError(
-                    "PickupController could not find the Item Outline shader.",
-                    this
-                );
-
-                return;
-            }
-
-            outlineMaterial = new Material(outlineShader);
-            outlineMaterial.renderQueue = ItemOutlineQueue;
+            return;
         }
-
-        outlineMaterial.SetColor("_OutlineColor", outlineColor);
-        outlineMaterial.SetFloat("_OutlineWidth", outlineWidth);
 
         Renderer[] renderers =
             item.GetComponentsInChildren<Renderer>(true);
@@ -365,6 +446,41 @@ public class PickupController : MonoBehaviour
         }
 
         highlightStates[item] = keptRenderers.ToArray();
+    }
+
+    // 取（或创建）指定颜色的描边材质：同色分类共享一个材质，
+    // 呼吸脉动时只需遍历少量材质改写透明度。
+    private Material GetOutlineMaterial(Color color)
+    {
+        if (outlineMaterials.TryGetValue(
+                color,
+                out Material cached
+            ))
+        {
+            return cached;
+        }
+
+        Shader outlineShader =
+            Shader.Find("Custom/Item Outline");
+
+        if (outlineShader == null)
+        {
+            Debug.LogError(
+                "PickupController could not find the Item Outline shader.",
+                this
+            );
+
+            return null;
+        }
+
+        Material material = new Material(outlineShader);
+        material.renderQueue = ItemOutlineQueue;
+        material.SetColor("_OutlineColor", color);
+        material.SetFloat("_OutlineWidth", outlineWidth);
+
+        outlineMaterials[color] = material;
+
+        return material;
     }
 
     private void RemoveOutline(PickableItem item)
@@ -420,10 +536,30 @@ public class PickupController : MonoBehaviour
         string itemName =
             info != null ? info.displayName : null;
 
-        promptText.text =
-            string.IsNullOrWhiteSpace(itemName)
-                ? "按 E 拾取"
-                : "按 E 拾取：" + itemName;
+        // 提示文案按分类区分：弹药箱与弹匣是补给交互而非入包。
+        switch (item.category)
+        {
+            case PickupCategory.AmmoBox:
+                promptText.text = item.unlimitedInteractions
+                    ? "按 E 补充所有武器弹药"
+                    : "按 E 补充所有武器弹药（剩余 " +
+                        item.RemainingInteractions + " 次）";
+                break;
+
+            case PickupCategory.Magazine:
+                promptText.text =
+                    "按 E 拾取弹匣：补充 " +
+                    item.ResolveMagazineWeaponName() +
+                    " 的弹药";
+                break;
+
+            default:
+                promptText.text =
+                    string.IsNullOrWhiteSpace(itemName)
+                        ? "按 E 拾取"
+                        : "按 E 拾取：" + itemName;
+                break;
+        }
     }
 
     // 与 Shader 中 Geometry+1 一致，描边始终紧跟在道具表面之后绘制。

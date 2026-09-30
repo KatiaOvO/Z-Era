@@ -22,7 +22,8 @@ MonoBehaviour:
   - objectiveId: pr_tk_01_talktoharper
     description: "\u5411\u54C8\u73C0\u4E2D\u58EB\u6C47\u62A5"
     requiredAmount: 1
-  prerequisiteQuestIds: []
+  prerequisiteQuestIds:
+  - pr_tk_00
   requiredFlags: []
   forbiddenFlags: []
   flagsToSetOnAccept:

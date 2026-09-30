@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -177,6 +178,18 @@ public class WeaponController : MonoBehaviour
     private GunType currentGunType;
     private FireMode currentFireMode;
     private float lastFireTime;
+
+    // 当前长按轮次编号：每次按下鼠标左键递增。
+    // 发射时写入子弹（BulletHandle.BurstId），供 tk07
+    // 按"开火时刻"归属命中，判别是否属于同一轮长按。
+    public int CurrentBurstId { get; private set; }
+
+    // 该枪弹匣容量（tk07 校验单轮长按最多可命中数用）。
+    public int MagazineSize => magazineSize;
+
+    // 按下/松开鼠标左键时广播（参数为新一轮的长按编号）。
+    public event Action<int> BurstStarted;
+    public event Action BurstEnded;
 
     #endregion
 
@@ -364,6 +377,16 @@ public class WeaponController : MonoBehaviour
         {
             zombieLayerMask =
                 LayerMask.GetMask("Zombie");
+
+            // 匕首同时可砍训练场靶子（tk08 一刀倒）：
+            // 图层不存在（其他场景）时跳过
+            int trainingTargetLayer =
+                LayerMask.NameToLayer("TrainingTarget");
+
+            if (trainingTargetLayer >= 0)
+            {
+                zombieLayerMask |= 1 << trainingTargetLayer;
+            }
         }
 
         if (knifeObstacleMask.value == 0)
@@ -375,6 +398,15 @@ public class WeaponController : MonoBehaviour
                     "Weapon",
                     "ZombieHearing"
                 );
+
+            // 靶子不算遮挡物：玩家砍僵尸时中间立着的靶子不能挡刀
+            int trainingTargetLayer =
+                LayerMask.NameToLayer("TrainingTarget");
+
+            if (trainingTargetLayer >= 0)
+            {
+                excludedLayers |= 1 << trainingTargetLayer;
+            }
 
             knifeObstacleMask =
                 Physics.DefaultRaycastLayers &
@@ -441,20 +473,45 @@ public class WeaponController : MonoBehaviour
         isWalk =
             !movementLocked && (h != 0f || v != 0f);
 
+        // 序章训练场门控（其他场景 Active=false 不干预）：
+        // 仅站在踏板触发器内且移动被剧情锁定时才允许开枪，
+        // 换弹不受限制
+        bool allowFire =
+            !PrologueGameplayGates.Active ||
+            PrologueGameplayGates.CanShoot;
+
+        // 每次按下鼠标左键即开启新一轮长按，递增编号并广播
         isSingleFire =
             Input.GetKeyDown(KeyCode.Mouse0);
 
         isAutoFire =
             Input.GetKey(KeyCode.Mouse0);
 
+        if (!allowFire)
+        {
+            isSingleFire = false;
+            isAutoFire = false;
+        }
+
+        if (isSingleFire)
+        {
+            CurrentBurstId++;
+            BurstStarted?.Invoke(CurrentBurstId);
+        }
+
         isReload =
             Input.GetKeyDown(KeyCode.R);
 
+        // 检视（pr_tk_02 接取后解锁）与匕首（pr_tk_08 接取后解锁）
         isInspect =
-            Input.GetKeyDown(KeyCode.V);
+            Input.GetKeyDown(KeyCode.V) &&
+            (!PrologueGameplayGates.Active ||
+                PrologueGameplayGates.CanInspect);
 
         isKnifeAttack =
-            Input.GetKeyDown(KeyCode.F);
+            Input.GetKeyDown(KeyCode.F) &&
+            (!PrologueGameplayGates.Active ||
+                PrologueGameplayGates.CanKnifeAttack);
     }
 
     private void AnimatorController()
@@ -1385,12 +1442,21 @@ public class WeaponController : MonoBehaviour
         {
             isSingleFire = false;
             isAutoFire = false;
+
+            BurstEnded?.Invoke();
         }
     }
 
-    private void HandleAmmo()
+    // 将弹药补满：弹匣与备弹都恢复到该枪的满额。
+    // 由弹药箱（补满所有武器）和弹匣（按名称补满对应武器）调用。
+    public void RefillAmmo()
     {
-        if (currentCarriedAmmo > maxCarriedAmmo)
+        currentMagazineAmmo = magazineSize;
+        currentCarriedAmmo = maxCarriedAmmo;
+    }
+
+    private void HandleAmmo()
+    {        if (currentCarriedAmmo > maxCarriedAmmo)
         {
             currentCarriedAmmo =
                 maxCarriedAmmo;

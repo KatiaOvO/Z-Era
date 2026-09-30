@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99bd3cb82ac25b64bb8347d92bafc97d, type: 3}
+  m_Name: pr_dia_harper_09_tk09_start
+  m_EditorClassIdentifier: 
+  startNodeId: harper_01
+  nodes:
+  - nodeId: harper_01
+    speakerName: "\u54C8\u73C0\u4E2D\u58EB"
+    speakerColor: {r: 1, g: 1, b: 1, a: 0}
+    portrait: {fileID: 0}
+    text: "\u65B0\u5175\uFF0C\u5F88\u9AD8\u5174\u4F60\u51FA\u8272\u5730\u5B8C\u6210\u4E86\u524D\u9762\u7684\u6240\u6709\u8BAD\u7EC3\u3002"
+    choices: []
+  - nodeId: harper_02
+    speakerName: "\u54C8\u73C0\u4E2D\u58EB"
+    speakerColor: {r: 1, g: 1, b: 1, a: 0}
+    portrait: {fileID: 0}
+    text: "\u8BA9\u6211\u4EEC\u4EE5\u4E00\u4E2A\u7B80\u5355\u8F7B\u677E\u7684\u4EFB\u52A1\u6765\u7ED3\u675F\u4ECA\u5929\u7684\u8BAD\u7EC3\u5427\u3002\r\n"
+    choices: []
+  - nodeId: harper_03
+    speakerName: "\u54C8\u73C0\u4E2D\u58EB"
+    speakerColor: {r: 1, g: 1, b: 1, a: 0}
+    portrait: {fileID: 0}
+    text: "\u8BAD\u7EC3\u573A\u53F3\u4FA7\u7684\u6B66\u5668\u7BB1\u91CC\u8FD8\u6709\u51E0\u628A\u6B66\u5668......\u6A21\u578B\uFF0C\u4F60\u53BB\u628A\u5B83\u4EEC\u6361\u8D77\u3002\r\n"
+    choices: []
+  - nodeId: harper_04
+    speakerName: "\u54C8\u73C0\u4E2D\u58EB"
+    speakerColor: {r: 1, g: 1, b: 1, a: 0}
+    portrait: {fileID: 0}
+    text: "\u6218\u573A\u4E0A\uFF0C\u8981\u61C2\u5F97\u90A3\u4E9B\u6B66\u5668\u548C\u7269\u54C1\u5BF9\u81EA\u5DF1\u6709\u5229\uFF0C\u90FD\u53EF\u4EE5\u62FE\u53D6\u5E76\u4FDD\u7559\u3002\r\n"
+    choices: []
+  - nodeId: harper_05
+    speakerName: "\u54C8\u73C0\u4E2D\u58EB"
+    speakerColor: {r: 1, g: 1, b: 1, a: 0}
+    portrait: {fileID: 0}
+    text: "\u81F3\u4E8E\u4E3A\u4EC0\u4E48\u8FD9\u4E9B\u6B66\u5668\u662F\u6A21\u578B\uFF0C\u8054\u90A6\u6700\u8FD1\u7684\u519B\u8D39\u5403\u7D27\uFF0C\u81F3\u5C11\u4E0A\u5934\u662F\u8FD9\u4E48\u8DDF\u6211\u8BF4\u7684\uFF0C\u6211\u4E00\u4ECB\u5C0F\u5C0F\u4E2D\u58EB\u4E5F\u4E0D\u77E5\u9053\u5177\u4F53\u60C5\u51B5\u3002\r\n"
+    choices: []
+  - nodeId: harper_06
+    speakerName: "\u54C8\u73C0\u4E2D\u58EB"
+    speakerColor: {r: 1, g: 1, b: 1, a: 0}
+    portrait: {fileID: 0}
+    text: "\u54B3......\u63A5\u4E0B\u6765\u53BB\u628A\u5B83\u4EEC\u6361\u8D77\u6765\u5E76\u67E5\u770B\uFF0C\u4ECA\u5929\u7684\u8BAD\u7EC3\u5C31\u53EF\u4EE5\u7ED3\u675F\u4E86\u3002\r\n"
+    choices:
+    - buttonText: "\u662F\u7684\uFF0C\u957F\u5B98\u3002 "
+      requiredFlags: []
+      forbiddenFlags: []
+      nextNodeId: 
+      onSelected:
+        m_PersistentCalls:
+          m_Calls:
+          - m_Target: {fileID: 11400000, guid: 7a63163c932314546951aa48056a6e35, type: 2}
+            m_TargetAssemblyTypeName: QuestAsset, Assembly-CSharp
+            m_MethodName: CompleteObjectiveFromEvent
+            m_Mode: 5
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument: pr_tk_08_talktoharper
+              m_BoolArgument: 0
+            m_CallState: 2
+          - m_Target: {fileID: 11400000, guid: 6e9a4fec9037f6f4cb4dabfbaf5cf69d, type: 2}
+            m_TargetAssemblyTypeName: QuestAsset, Assembly-CSharp
+            m_MethodName: StartFromEvent
+            m_Mode: 1
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument: 
+              m_BoolArgument: 0
+            m_CallState: 2

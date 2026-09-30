@@ -687,6 +687,10 @@ MonoBehaviour:
   interactDistance: 2.5
   promptText: {fileID: 1759937634}
   promptFormat: "\u5BF9\u8BDD"
+  unknownPrompt: "\uFF1F\uFF1F\uFF1F"
+  nameRevealNodeId: 
+  requireForwardZone: 1
+  interactHalfAngle: 90
 --- !u!136 &784269318
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1605,7 +1609,7 @@ PrefabInstance:
     - target: {fileID: 7684494443528791624, guid: 0634c8f657e2b5744b147d676b250c7e,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8867558620559551856, guid: 0634c8f657e2b5744b147d676b250c7e,
         type: 3}

@@ -14,17 +14,27 @@ namespace Migration.UI
         IDeselectHandler
     {
         [Header("Target")]
+        [Tooltip("执行填充动画的 Image（Type 需为 Filled），留空则自动查找：优先名为 Fill 的直接子物体，其次子物体中的第一个 Image，最后退化为自身 Image")]
         [SerializeField] private Image m_TargetImage;
+        [Tooltip("开启后 Awake 时自动把目标 Image 配置为 Filled 类型、水平填充、从左往右；已手动配置填充方式时关闭以免被覆盖")]
         [SerializeField] private bool m_ConfigureImageOnAwake = true;
 
         [Header("Fill")]
+        [Tooltip("未交互（未悬停/未按下/未选中）时回落的填充量")]
         [SerializeField, Range(0f, 1f)] private float m_StartAmount = 0f;
+        [Tooltip("交互（悬停/按下/选中任一条件满足）时填充到的目标量")]
         [SerializeField, Range(0f, 1f)] private float m_EndAmount = 1f;
+        [Tooltip("填充动画时长（秒）：从当前量升到目标量的速度，0 表示瞬间填满")]
         [SerializeField, Min(0f)] private float m_FillDuration = 0.18f;
+        [Tooltip("回落动画时长（秒）：从当前量降回起始量的速度，0 表示瞬间清空")]
         [SerializeField, Min(0f)] private float m_EmptyDuration = 0.18f;
+        [Tooltip("鼠标悬停在按钮上时填充")]
         [SerializeField] private bool m_FillOnHover = true;
+        [Tooltip("鼠标按下期间填充")]
         [SerializeField] private bool m_FillWhilePressed = true;
+        [Tooltip("被键盘/手柄选中（EventSystem 的 Select）时填充，适合手柄导航场景")]
         [SerializeField] private bool m_FillOnSelect = false;
+        [Tooltip("开启后动画使用 unscaledDeltaTime，Time.timeScale = 0（如暂停）时依然播放")]
         [SerializeField] private bool m_UseUnscaledTime = true;
 
         private bool m_IsHovered;
