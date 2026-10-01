@@ -9,11 +9,12 @@ using UnityEngine.UI;
 /// Hover Fill 透明度同步淡入、文字变为悬停颜色，并播放一段
 /// 悬停音效；移出时填充保持铺满状态（中断的填充会继续跑完），
 /// 透明度淡出，结束后填充进度复位、文字恢复常规颜色。
+/// 点击按钮时播放一次点击音效。
 /// 各动画时长与音效在检查器中设置。
 /// 由 DialogueChoiceButton 改造而来，去除了对话系统耦合。
 /// </summary>
 public class MainMenuButtonHoverFill : MonoBehaviour,
-    IPointerEnterHandler, IPointerExitHandler
+    IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [Header("引用")]
 
@@ -55,6 +56,17 @@ public class MainMenuButtonHoverFill : MonoBehaviour,
     [SerializeField]
     private float hoverSoundPitchVariation = 0f;
 
+    [Header("点击音效")]
+
+    [Tooltip("点击按钮时播放一次的音效，留空则不播放")]
+    [SerializeField]
+    private AudioClip clickSound;
+
+    [Tooltip("点击音效音量")]
+    [Range(0f, 1f)]
+    [SerializeField]
+    private float clickSoundVolume = 1f;
+
     // 常规文字颜色，初始化时从按钮文字上采集。
     private Color normalTextColor = Color.white;
 
@@ -64,9 +76,9 @@ public class MainMenuButtonHoverFill : MonoBehaviour,
     // 透明度淡入未完成时鼠标已移出：待淡入到 1 后再开始淡出
     private bool pendingFadeOut;
 
-    // 专属音源：不复用其他系统的 AudioSource，避免被别处的
-    // Stop() 中途掐断。
-    private AudioSource hoverAudioSource;
+    // 专属音源：悬停与点击共用，不复用其他系统的
+    // AudioSource，避免被别处的 Stop() 中途掐断。
+    private AudioSource buttonAudioSource;
 
     private void Awake()
     {
@@ -91,14 +103,14 @@ public class MainMenuButtonHoverFill : MonoBehaviour,
             normalTextColor = label.color;
         }
 
-        if (hoverSound == null)
+        if (hoverSound == null && clickSound == null)
         {
             return;
         }
 
-        hoverAudioSource = gameObject.AddComponent<AudioSource>();
-        hoverAudioSource.playOnAwake = false;
-        hoverAudioSource.spatialBlend = 0f;
+        buttonAudioSource = gameObject.AddComponent<AudioSource>();
+        buttonAudioSource.playOnAwake = false;
+        buttonAudioSource.spatialBlend = 0f;
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -134,20 +146,63 @@ public class MainMenuButtonHoverFill : MonoBehaviour,
         }
     }
 
+    // 点击音效只播一次，不做音调随机
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        PlayClickSound();
+    }
+
+    private void PlayClickSound()
+    {
+        if (clickSound == null)
+        {
+            return;
+        }
+
+        // 用独立的临时物体播放：面板关闭按钮随面板整体禁用，
+        // 挂在按钮上的音源会被一起掐断；临时物体独立存活到
+        // 音频播完，面板秒关也不会截断音效
+        GameObject soundHost = new GameObject("ClickSound");
+        AudioSource source = soundHost.AddComponent<AudioSource>();
+        source.playOnAwake = false;
+        source.spatialBlend = 0f;
+        source.volume = clickSoundVolume;
+        source.PlayOneShot(clickSound);
+        Destroy(soundHost, clickSound.length);
+    }
+
+    // 面板被整体禁用时收不到 PointerExit，填充、透明度与文字
+    // 会停留在悬停状态带进下一轮：由面板开启器在打开时调用，
+    // 统一复位到初始状态
+    public void ResetVisualState()
+    {
+        StopFill();
+        StopAlphaFade();
+        pendingFadeOut = false;
+
+        if (hoverFill != null)
+        {
+            SetFillAlpha(0f);
+            hoverFill.fillAmount = 0f;
+        }
+
+        ApplyTextColor(normalTextColor);
+    }
+
     private void PlayHoverSound()
     {
-        if (hoverSound == null || hoverAudioSource == null)
+        if (hoverSound == null || buttonAudioSource == null)
         {
             return;
         }
 
         // 每次轻微随机音调，连续悬停多个按钮时不像复读
-        hoverAudioSource.pitch =
+        buttonAudioSource.pitch =
             1f + Random.Range(
                 -hoverSoundPitchVariation,
                 hoverSoundPitchVariation);
 
-        hoverAudioSource.PlayOneShot(
+        buttonAudioSource.PlayOneShot(
             hoverSound,
             hoverSoundVolume);
     }

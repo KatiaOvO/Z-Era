@@ -126,6 +126,13 @@ namespace Migration.UI
         public bool isAnimating { get { return m_IsAnimating; } }
         public bool isVisible { get { return m_Location <= 0.001f; } }
 
+        // 动画时长（秒），供外部系统在播放前按需覆盖
+        public float duration
+        {
+            get { return m_Duration; }
+            set { m_Duration = Mathf.Max(0f, value); }
+        }
+
         public bool isShowComplete
         {
             get { return !m_IsAnimating && m_Location <= 0.001f; }
