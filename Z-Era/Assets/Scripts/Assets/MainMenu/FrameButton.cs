@@ -33,11 +33,23 @@ public class FrameButton : MonoBehaviour,
     [SerializeField]
     private AnimationCurve scaleCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
+    [Header("悬停音效")]
+
+    [Tooltip("鼠标进入按钮时播放的音效")]
+    [SerializeField]
+    private AudioClip hoverClip;
+
+    [Tooltip("悬停音效的音量")]
+    [SerializeField, Range(0f, 1f)]
+    private float hoverVolume = 1f;
+
     // 初始缩放，恢复时回到这个基准而不是固定的 1，
     // 兼容 Image 本身带非 1 缩放配置的情况
     private Vector3 baseScale = Vector3.one;
 
     private Coroutine scaleCoroutine;
+
+    private AudioSource audioSource;
 
     private void Awake()
     {
@@ -45,11 +57,26 @@ public class FrameButton : MonoBehaviour,
         {
             baseScale = targetImage.rectTransform.localScale;
         }
+
+        // 复用物体上已有的 AudioSource，没有则自动补一个，
+        // playOnAwake 关掉避免物体激活时误播
+        if (!TryGetComponent(out audioSource))
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        audioSource.playOnAwake = false;
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
         StartScale(baseScale * hoverScale);
+
+        // PlayOneShot 允许快速来回悬停时音效重叠播放而不是互相打断
+        if (hoverClip != null)
+        {
+            audioSource.PlayOneShot(hoverClip, hoverVolume);
+        }
     }
 
     public void OnPointerExit(PointerEventData eventData)

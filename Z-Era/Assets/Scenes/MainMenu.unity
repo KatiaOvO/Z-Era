@@ -137,7 +137,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &72480782
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2438,6 +2438,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  hoverClip: {fileID: 8300000, guid: 4a7b3bcf0f0e8124da5c158cd578f1f1, type: 3}
+  hoverVolume: 1
 --- !u!114 &642620812
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3547,6 +3549,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  hoverClip: {fileID: 8300000, guid: 4a7b3bcf0f0e8124da5c158cd578f1f1, type: 3}
+  hoverVolume: 1
 --- !u!114 &941755954
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3819,6 +3823,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  hoverClip: {fileID: 8300000, guid: 4a7b3bcf0f0e8124da5c158cd578f1f1, type: 3}
+  hoverVolume: 1
 --- !u!114 &1020165471
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4129,6 +4135,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  hoverClip: {fileID: 8300000, guid: 4a7b3bcf0f0e8124da5c158cd578f1f1, type: 3}
+  hoverVolume: 1
 --- !u!114 &1076952411
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4519,6 +4527,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  hoverClip: {fileID: 8300000, guid: 4a7b3bcf0f0e8124da5c158cd578f1f1, type: 3}
+  hoverVolume: 1
 --- !u!114 &1113409781
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4761,6 +4771,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  hoverClip: {fileID: 8300000, guid: e9bd92a7f0a29404fac7fb3b1b5e47b9, type: 3}
+  hoverVolume: 1
 --- !u!1 &1204877355
 GameObject:
   m_ObjectHideFlags: 0
@@ -6251,6 +6263,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  hoverClip: {fileID: 8300000, guid: 4a7b3bcf0f0e8124da5c158cd578f1f1, type: 3}
+  hoverVolume: 1
 --- !u!114 &1711505030
 MonoBehaviour:
   m_ObjectHideFlags: 0
