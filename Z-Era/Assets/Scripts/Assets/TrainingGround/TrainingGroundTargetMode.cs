@@ -950,6 +950,11 @@ public class TrainingGroundTargetMode : MonoBehaviour
         entry.Cycling = true;
         entry.Counter.countingEnabled = false;
 
+        // 靶子被击倒时清除附着在它身上的红色命中线框：
+        // 线框由 BulletHitMarkerManager 生成并挂在被击中的碰撞体上，
+        // 靶子倒下/换位后残留在旧弹着点上只会造成干扰
+        ClearHitMarkers(entry);
+
         // 倒下/立起期间关闭匕首计数，避免该期间被匕首命中
         // 白白消耗干净计数器的匕首击倒状态
         entry.Counter.knifeCountingEnabled = false;
@@ -970,6 +975,30 @@ public class TrainingGroundTargetMode : MonoBehaviour
         entry.CycleRoutine = StartCoroutine(
             KnockDownRoutine(entry)
         );
+    }
+
+    // 训练场命中线框的物体名（BulletHitMarkerManager 生成时固定）
+    private const string HitMarkerName = "Bullet Hit Marker";
+
+    // 清除附着在靶子（含子碰撞体）上的红色命中线框。
+    // 线框只在命中 TrainingGroundWall 图层表面时生成，
+    // 是训练场专属效果，其余场景没有此物体，不受影响
+    private void ClearHitMarkers(TargetEntry entry)
+    {
+        if (entry.Target == null)
+        {
+            return;
+        }
+
+        foreach (Transform child in
+            entry.Target.GetComponentsInChildren<Transform>(true))
+        {
+            if (child != entry.Target &&
+                child.name == HitMarkerName)
+            {
+                Destroy(child.gameObject);
+            }
+        }
     }
 
     // 命中靶子统计：OnBurstHit 在计数开启时每次命中触发一次

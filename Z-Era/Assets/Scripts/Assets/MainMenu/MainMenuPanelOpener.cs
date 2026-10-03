@@ -2,6 +2,7 @@ using System.Collections;
 using Migration.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 /// <summary>
 /// 主菜单面板开启器：点击按钮后激活整个面板，
@@ -67,6 +68,26 @@ public class MainMenuPanelOpener : MonoBehaviour, IPointerClickHandler
         maskDissolve.SetVisible(true, true);
 
         StartCoroutine(DissolveMaskRoutine());
+    }
+
+    // MaskBgImage 的 Raycast Target 同步：
+    // 溶解中/完全显示时勾选（遮罩照常挡住射线），溶解完毕
+    // （完全消失）后取消勾选，不再挡住面板内容的点击；
+    // 再次打开面板时 SetVisible(true, true) 瞬时显示，
+    // 勾选会自动恢复，无需手动切换
+    private void Update()
+    {
+        if (maskDissolve == null || maskDissolve.graphic == null)
+        {
+            return;
+        }
+
+        bool shouldBlockRaycast = !maskDissolve.isHideComplete;
+
+        if (maskDissolve.graphic.raycastTarget != shouldBlockRaycast)
+        {
+            maskDissolve.graphic.raycastTarget = shouldBlockRaycast;
+        }
     }
 
     private IEnumerator DissolveMaskRoutine()

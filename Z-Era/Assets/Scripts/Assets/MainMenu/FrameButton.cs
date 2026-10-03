@@ -11,7 +11,7 @@ using UnityEngine.UI;
 /// 可与 MainMenuButtonHoverFill 叠加挂在同一按钮上，互不干扰。
 /// </summary>
 public class FrameButton : MonoBehaviour,
-    IPointerEnterHandler, IPointerExitHandler
+    IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [Header("引用")]
 
@@ -33,6 +33,16 @@ public class FrameButton : MonoBehaviour,
     [SerializeField]
     private AnimationCurve scaleCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
+    [Header("悬停透明度")]
+
+    [Tooltip("按钮图片的初始透明度，鼠标移出后恢复到该值")]
+    [SerializeField, Range(0f, 1f)]
+    private float normalAlpha = 0.5f;
+
+    [Tooltip("鼠标移入时按钮图片的透明度")]
+    [SerializeField, Range(0f, 1f)]
+    private float hoverAlpha = 1f;
+
     [Header("悬停音效")]
 
     [Tooltip("鼠标进入按钮时播放的音效")]
@@ -45,6 +55,25 @@ public class FrameButton : MonoBehaviour,
 
     // 初始缩放，恢复时回到这个基准而不是固定的 1，
     // 兼容 Image 本身带非 1 缩放配置的情况
+    [Header("点击音效")]
+
+    [Tooltip("点击按钮时播放的音效，留空则不播放")]
+    [SerializeField]
+    private AudioClip clickClip;
+
+    [Tooltip("点击音效音量")]
+    [Range(0f, 1f)]
+    [SerializeField]
+    private float clickSoundVolume = 1f;
+
+    [Header("场景跳转")]
+
+    [Tooltip("跳转的目标场景名，场景需加入 Build Settings；" +
+        "留空则点击后不跳转。跳转的溶解与加载进度由场景中的 " +
+        "SceneTransitionController 全局服务负责")]
+    [SerializeField]
+    private string sceneName;
+
     private Vector3 baseScale = Vector3.one;
 
     private Coroutine scaleCoroutine;
@@ -56,6 +85,9 @@ public class FrameButton : MonoBehaviour,
         if (targetImage != null)
         {
             baseScale = targetImage.rectTransform.localScale;
+
+            // 初始透明度：移入前按钮图片半透明
+            SetAlpha(normalAlpha);
         }
 
         // 复用物体上已有的 AudioSource，没有则自动补一个，
@@ -72,6 +104,9 @@ public class FrameButton : MonoBehaviour,
     {
         StartScale(baseScale * hoverScale);
 
+        // 透明度直接变为悬停值，不做渐变
+        SetAlpha(hoverAlpha);
+
         // PlayOneShot 允许快速来回悬停时音效重叠播放而不是互相打断
         if (hoverClip != null)
         {
@@ -82,6 +117,51 @@ public class FrameButton : MonoBehaviour,
     public void OnPointerExit(PointerEventData eventData)
     {
         StartScale(baseScale);
+
+        // 透明度直接恢复初始值
+        SetAlpha(normalAlpha);
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        PlayClickSound();
+
+        if (!string.IsNullOrEmpty(sceneName))
+        {
+            SceneTransitionController.TransitionTo(sceneName);
+        }
+    }
+
+    // 用独立的临时物体播放点击音效：按钮常随面板整体禁用，
+    // 挂在按钮上的音源会被一起掐断；临时物体独立存活到
+    // 音频播完，面板秒关也不会截断音效
+    private void PlayClickSound()
+    {
+        if (clickClip == null)
+        {
+            return;
+        }
+
+        GameObject soundHost = new GameObject("ClickSound");
+        AudioSource source = soundHost.AddComponent<AudioSource>();
+        source.playOnAwake = false;
+        source.spatialBlend = 0f;
+        source.volume = clickSoundVolume;
+        source.PlayOneShot(clickClip);
+        Destroy(soundHost, clickClip.length);
+    }
+
+    // 一次性设置按钮图片的透明度
+    private void SetAlpha(float alpha)
+    {
+        if (targetImage == null)
+        {
+            return;
+        }
+
+        Color color = targetImage.color;
+        color.a = alpha;
+        targetImage.color = color;
     }
 
     // 从当前缩放开始过渡，中途移出/再进入不会跳变
