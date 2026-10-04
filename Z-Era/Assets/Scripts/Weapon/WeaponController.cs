@@ -360,6 +360,16 @@ public class WeaponController : MonoBehaviour
 
     private void OnDisable()
     {
+        // 组件被锁定停用（对话、训练场确认界面等）后 Update 不再
+        // 运行，没有人把 walk 置回 false，动画机会一直卡在走路
+        // 状态：停用瞬间退出 walk，让动画机自己自然过渡回待机
+        isWalk = false;
+
+        if (animator != null)
+        {
+            animator.SetBool("walk", false);
+        }
+
         EndKnifeAttackTracking(true);
     }
 

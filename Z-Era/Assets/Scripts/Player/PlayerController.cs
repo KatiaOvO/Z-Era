@@ -54,7 +54,9 @@ public class PlayerController : MonoBehaviour
 
     #region 相机参数
 
-    public float mouseSensitivity = 2.0f;
+    // 灵敏度全局化：不再由本组件持有，改用 SettingsManager 的
+    // 全局灵敏度（默认值 2.0 即本组件原来的 mouseSensitivity 默认值，
+    // 由设置面板滑条/输入字段控制并持久化）
     public float maxLookAngle = 80.0f;
 
     [Tooltip("是否锁定移动（剧情演出用）：锁定时移动输入清零，视角与射击不受影响")]
@@ -117,6 +119,17 @@ public class PlayerController : MonoBehaviour
     {
         PlayerCameraController();
         PlayerMoveController();
+    }
+
+    // 对话、训练场确认界面等锁定流程会整体停用本组件，
+    // 停用后 Update 不再运行，锁定分支里的停脚步声逻辑不会再执行：
+    // 在停用瞬间立即停止，避免行走途中被锁定时脚步声一直响
+    private void OnDisable()
+    {
+        if (audioSource != null && audioSource.isPlaying)
+        {
+            audioSource.Stop();
+        }
     }
 
     // 进入锁定瞬间记录的位置，锁定期间每帧钉回：
@@ -229,8 +242,8 @@ public class PlayerController : MonoBehaviour
 
     private void PlayerCameraController()
     {
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+        float mouseX = Input.GetAxis("Mouse X") * SettingsManager.MouseSensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * SettingsManager.MouseSensitivity;
 
         transform.Rotate(Vector3.up * mouseX);
 

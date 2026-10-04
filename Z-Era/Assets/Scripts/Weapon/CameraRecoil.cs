@@ -118,6 +118,20 @@ public class CameraRecoil : MonoBehaviour
 
     private void LateUpdate()
     {
+        // 设置里关闭了射击镜头侧倾：不产生侧倾（后坐力抬枪不受
+        // 此开关影响，在 PlayRecoil 里正常施加）。关闭瞬间残留的
+        // 偏移立即归零，重新开启时不会突然跳一下；武器相机同步
+        // 可以安全跳过，PlayerController 每帧也在做同样的同步。
+        // 用标志位而不是组件开关——本组件会被锁定系统
+        // （对话/训练场等）按记录禁用/恢复，组件级开关会被
+        // 恢复逻辑撤销
+        if (!SettingsManager.CameraRecoilEnabled)
+        {
+            currentOffset = 0f;
+            offsetVelocity = 0f;
+            return;
+        }
+
         // 侧倾平滑恢复原位
         currentOffset = Mathf.SmoothDamp(
             currentOffset,
