@@ -48,8 +48,8 @@ public class HealthHUD : MonoBehaviour
     private bool hasInitialHealth;
     private bool isLowHealth;
 
-    private Color healthNormalColor = Color.white;
-    private Color iconNormalColor = Color.white;
+    private Color healthNormalColor => SettingsManager.HUDColor;
+    private Color iconNormalColor => SettingsManager.HUDColor;
     private float redFillNormalAlpha = 1f;
 
     private Vector2 healthBasePosition;
@@ -71,13 +71,11 @@ public class HealthHUD : MonoBehaviour
             healthBasePosition =
                 healthText.rectTransform.anchoredPosition;
 
-            healthNormalColor = healthText.color;
             healthText.alpha = 1f;
         }
 
         if (healthIcon != null)
         {
-            iconNormalColor = healthIcon.color;
         }
 
         if (healthOutgoingText != null)
@@ -592,7 +590,7 @@ public class HealthHUD : MonoBehaviour
     private Color GetLowHealthBlinkColor()
     {
         return Color.Lerp(
-            Color.white,
+            SettingsManager.HUDColor,
             Color.red,
             GetLowHealthBlinkAmount()
         );
@@ -717,28 +715,4 @@ public class HealthHUD : MonoBehaviour
         }
     }
 
-    public void SetColor(Color color)
-    {
-        healthNormalColor = color;
-        iconNormalColor = color;
-
-        if (healthIcon != null &&
-            !isLowHealth)
-        {
-            healthIcon.color = color;
-        }
-
-        if (healthText != null &&
-            !isLowHealth &&
-            !isHealthTextAnimationActive)
-        {
-            healthText.color = color;
-        }
-
-        if (healthOutgoingText != null &&
-            !isHealthTextAnimationActive)
-        {
-            healthOutgoingText.color = color;
-        }
-    }
 }

@@ -63,8 +63,8 @@ public class WeaponHUD : MonoBehaviour
     private static readonly Color32 ZeroAmmoColor =
         new Color32(0xFF, 0x33, 0x33, 0xFF);
 
-    private Color magazineNormalColor = Color.white;
-    private Color carriedNormalColor = Color.white;
+    private Color magazineNormalColor => SettingsManager.HUDColor;
+    private Color carriedNormalColor => SettingsManager.HUDColor;
 
     private Vector2 magazineBasePosition;
     private Vector2 carriedBasePosition;
@@ -97,7 +97,6 @@ public class WeaponHUD : MonoBehaviour
             magazineBasePosition =
                 magazineAmmoText.rectTransform.anchoredPosition;
 
-            magazineNormalColor = magazineAmmoText.color;
             magazineAmmoText.alpha = 1f;
         }
 
@@ -106,7 +105,6 @@ public class WeaponHUD : MonoBehaviour
             carriedBasePosition =
                 carriedAmmoText.rectTransform.anchoredPosition;
 
-            carriedNormalColor = carriedAmmoText.color;
             carriedAmmoText.alpha = 1f;
         }
 

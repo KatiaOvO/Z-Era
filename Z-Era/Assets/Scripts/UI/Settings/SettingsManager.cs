@@ -64,6 +64,41 @@ public class SettingsManager : MonoBehaviour
 
     public static bool CameraRecoilEnabled { get; private set; } = true;
 
+    // 准星外观配置：面板修改后 CrosshairHUD 与预览准星共用；
+    // 版本号在每次应用后自增，HUD 据此检测外观变化并重新应用，
+    // 避免每帧无差别刷新 Image 尺寸导致界面反复重建
+    private const string CrosshairColorKey = "Settings.Crosshair.Color";
+    private const string CrosshairLineWidthKey = "Settings.Crosshair.LineWidth";
+    private const string CrosshairLineLengthKey = "Settings.Crosshair.LineLength";
+    private const string CrosshairGapKey = "Settings.Crosshair.Gap";
+    private const string CrosshairOpacityKey = "Settings.Crosshair.Opacity";
+    private const string CrosshairDotKey = "Settings.Crosshair.Dot";
+    private const string CrosshairDynamicKey = "Settings.Crosshair.Dynamic";
+
+    public static CrosshairConfig Crosshair { get; private set; } =
+        new CrosshairConfig();
+
+    public static int CrosshairVersion { get; private set; }
+
+    // HUD 整体着色：游戏内 HUD 的图标与文本统一使用该颜色的 RGB，
+    // 各元素自身的 alpha（淡入淡出、闪烁）不受影响。
+    // 版本号用于 HUD 侧检测变化并重新应用
+    private const string HUDColorKey = "Settings.HUD.Color";
+
+    public static Color HUDColor { get; private set; } = Color.white;
+
+    public static int HUDColorVersion { get; private set; }
+
+    // 帧率限制选项，与 FrameRateDropdown 的选项一一对应：
+    // -1 = 不限制（由硬件决定，通常远超 120 且风扇起飞）。
+    // 生效前提是关闭垂直同步（vSync 优先级高于 targetFrameRate），
+    // 因此启动时统一置 vSyncCount = 0
+    public static readonly int[] FrameRateValues = { 60, 90, 120, -1 };
+
+    private const string FrameRateKey = "Settings.FrameRate";
+
+    public static int TargetFrameRate { get; private set; } = 60;
+
     private ColorAdjustments colorAdjustments;
 
     /// <summary>程序启动时自动创建，无需在场景中手动摆放</summary>
@@ -87,10 +122,17 @@ public class SettingsManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
+        // 帧率限制的生效前提：垂直同步必须关闭，
+        // 否则 vSync 优先级高于 targetFrameRate
+        QualitySettings.vSyncCount = 0;
+
         CreateBrightnessVolume();
+        SetFrameRate(GetFrameRate());
         SetVolume(GetVolume());
         SetSensitivity(GetSensitivity());
         SetCameraRecoilEnabled(GetCameraRecoilEnabled());
+        LoadCrosshairConfig();
+        LoadHUDColor();
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
@@ -263,6 +305,116 @@ public class SettingsManager : MonoBehaviour
             enabled ? 1 : 0);
 
         CameraRecoilEnabled = enabled;
+    }
+
+    // 准星外观：从 PlayerPrefs 逐项还原（颜色存 HEX 字符串），
+    // 缺项用 CrosshairConfig 的默认值兜底
+    private void LoadCrosshairConfig()
+    {
+        var config = new CrosshairConfig();
+
+        string colorHex =
+            PlayerPrefs.GetString(CrosshairColorKey, "");
+
+        if (!string.IsNullOrEmpty(colorHex) &&
+            ColorUtility.TryParseHtmlString(
+                "#" + colorHex,
+                out Color color))
+        {
+            config.color = color;
+        }
+
+        config.lineWidth = PlayerPrefs.GetFloat(
+            CrosshairLineWidthKey, config.lineWidth);
+        config.lineLength = PlayerPrefs.GetFloat(
+            CrosshairLineLengthKey, config.lineLength);
+        config.gap = PlayerPrefs.GetFloat(
+            CrosshairGapKey, config.gap);
+        config.opacity = PlayerPrefs.GetFloat(
+            CrosshairOpacityKey, config.opacity);
+        config.dotEnabled = PlayerPrefs.GetInt(
+            CrosshairDotKey, 0) == 1;
+        config.dynamicCrosshairEnabled = PlayerPrefs.GetInt(
+            CrosshairDynamicKey, 1) == 1;
+
+        ApplyCrosshairConfig(config);
+    }
+
+    // 应用准星配置：钳到允许范围后生效并逐项持久化
+    public void SetCrosshairConfig(CrosshairConfig config)
+    {
+        config.Clamp();
+        ApplyCrosshairConfig(config);
+
+        PlayerPrefs.SetString(
+            CrosshairColorKey,
+            ColorUtility.ToHtmlStringRGBA(config.color));
+        PlayerPrefs.SetFloat(
+            CrosshairLineWidthKey, config.lineWidth);
+        PlayerPrefs.SetFloat(
+            CrosshairLineLengthKey, config.lineLength);
+        PlayerPrefs.SetFloat(
+            CrosshairGapKey, config.gap);
+        PlayerPrefs.SetFloat(
+            CrosshairOpacityKey, config.opacity);
+        PlayerPrefs.SetInt(
+            CrosshairDotKey,
+            config.dotEnabled ? 1 : 0);
+        PlayerPrefs.SetInt(
+            CrosshairDynamicKey,
+            config.dynamicCrosshairEnabled ? 1 : 0);
+    }
+
+    // HUD 颜色：从 PlayerPrefs 还原（存 RGB 的 HEX，不含 alpha）
+    private void LoadHUDColor()
+    {
+        string colorHex = PlayerPrefs.GetString(HUDColorKey, "");
+
+        if (!string.IsNullOrEmpty(colorHex) &&
+            ColorUtility.TryParseHtmlString(
+                "#" + colorHex,
+                out Color color))
+        {
+            SetHUDColor(color);
+        }
+    }
+
+    // 应用 HUD 整体颜色（实时生效），同时持久化。
+    // 只取 RGB；各 HUD 元素自己的 alpha（淡入淡出、闪烁）不受影响
+    public void SetHUDColor(Color color)
+    {
+        HUDColor = new Color(color.r, color.g, color.b, 1f);
+        HUDColorVersion++;
+
+        PlayerPrefs.SetString(
+            HUDColorKey,
+            ColorUtility.ToHtmlStringRGB(HUDColor));
+    }
+
+    /// <summary>读取持久化的帧率上限，首次运行为 60</summary>
+    public int GetFrameRate()
+    {
+        return PlayerPrefs.GetInt(FrameRateKey, 60);
+    }
+
+    /// <summary>
+    /// 应用全局帧率上限（实时生效），同时持久化。
+    /// -1 表示不限制。前置条件：Awake 已把 vSyncCount 置 0，
+    /// 否则垂直同步的优先级高于 targetFrameRate，设置不会生效
+    /// </summary>
+    public void SetFrameRate(int fps)
+    {
+        fps = fps < 0 ? -1 : Mathf.Clamp(fps, 30, 360);
+
+        PlayerPrefs.SetInt(FrameRateKey, fps);
+        TargetFrameRate = fps;
+        Application.targetFrameRate = fps;
+    }
+
+    private void ApplyCrosshairConfig(CrosshairConfig config)
+    {
+        Crosshair = config;
+        CrosshairVersion++;
     }
 
     private void CreateBrightnessVolume()

@@ -45,8 +45,11 @@ public class StaminaHUD : MonoBehaviour
     private bool hasInitialStamina;
     private bool isLowStamina;
 
-    private Color staminaNormalColor = Color.white;
-    private Color iconNormalColor = Color.white;
+    // 体力 HUD 的基础颜色不再由本组件捕获维护，
+    // 统一读取 SettingsManager.HUDColor（设置面板可调）：
+    // 本组件会每帧把元素颜色恢复为“正常色”，若用一次性染色
+    // 会被这里覆盖，因此必须改为动态读取
+
     private float redFillNormalAlpha = 1f;
 
     private Vector2 staminaBasePosition;
@@ -67,13 +70,7 @@ public class StaminaHUD : MonoBehaviour
             staminaBasePosition =
                 staminaText.rectTransform.anchoredPosition;
 
-            staminaNormalColor = staminaText.color;
             staminaText.alpha = 1f;
-        }
-
-        if (staminaIcon != null)
-        {
-            iconNormalColor = staminaIcon.color;
         }
 
         if (staminaOutgoingText != null)
@@ -225,7 +222,7 @@ public class StaminaHUD : MonoBehaviour
                 oldStaminaValue
             );
 
-            staminaOutgoingText.color = staminaNormalColor;
+            staminaOutgoingText.color = SettingsManager.HUDColor;
             staminaOutgoingText.alpha = 1f;
             staminaOutgoingText.rectTransform.anchoredPosition =
                 staminaBasePosition;
@@ -520,13 +517,13 @@ public class StaminaHUD : MonoBehaviour
         {
             if (staminaIcon != null)
             {
-                staminaIcon.color = iconNormalColor;
+                staminaIcon.color = SettingsManager.HUDColor;
             }
 
             if (staminaText != null &&
                 !isStaminaTextAnimationActive)
             {
-                staminaText.color = staminaNormalColor;
+                staminaText.color = SettingsManager.HUDColor;
             }
 
             return;
@@ -559,8 +556,9 @@ public class StaminaHUD : MonoBehaviour
 
     private Color GetLowStaminaBlinkColor()
     {
+        // 从 HUD 基础色闪烁到警示红
         return Color.Lerp(
-            Color.white,
+            SettingsManager.HUDColor,
             Color.red,
             GetLowStaminaBlinkAmount()
         );
@@ -581,7 +579,7 @@ public class StaminaHUD : MonoBehaviour
         }
 
         staminaText.color =
-            staminaNormalColor;
+            SettingsManager.HUDColor;
     }
 
     private void RestoreNormalColors()
@@ -589,14 +587,14 @@ public class StaminaHUD : MonoBehaviour
         if (staminaIcon != null)
         {
             staminaIcon.color =
-                iconNormalColor;
+                SettingsManager.HUDColor;
         }
 
         if (staminaText != null &&
             !isStaminaTextAnimationActive)
         {
             staminaText.color =
-                staminaNormalColor;
+                SettingsManager.HUDColor;
         }
 
         ApplyRedFillAlpha(
@@ -644,30 +642,5 @@ public class StaminaHUD : MonoBehaviour
             Mathf.Max(0f, lowStaminaBlinkFrequency);
 
         ConfigureStaminaIconRedFill();
-    }
-
-    public void SetColor(Color color)
-    {
-        staminaNormalColor = color;
-        iconNormalColor = color;
-
-        if (staminaIcon != null &&
-            !isLowStamina)
-        {
-            staminaIcon.color = color;
-        }
-
-        if (staminaText != null &&
-            !isLowStamina &&
-            !isStaminaTextAnimationActive)
-        {
-            staminaText.color = color;
-        }
-
-        if (staminaOutgoingText != null &&
-            !isStaminaTextAnimationActive)
-        {
-            staminaOutgoingText.color = color;
-        }
     }
 }

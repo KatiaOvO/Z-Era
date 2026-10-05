@@ -16,6 +16,9 @@ public class CrosshairHUD : MonoBehaviour
     [Tooltip("准星右方横线")]
     public Image rightLine;
 
+    [Tooltip("准星中心点（设置面板可开关）")]
+    public Image dot;
+
     [Header("换弹图标")]
     [Tooltip("换弹时显示的图标")]
     public Image reloadIcon;
@@ -32,23 +35,7 @@ public class CrosshairHUD : MonoBehaviour
     [Range(1f, 10f)]
     public float outOfAmmoBlinkSpeed = 3f;
 
-    [Header("准星外观")]
-    [Tooltip("准星颜色")]
-    public Color crosshairColor = Color.white;
-
-    [Tooltip("准星线条长度")]
-    [Range(5f, 50f)]
-    public float lineLength = 20f;
-
-    [Tooltip("准星线条宽度")]
-    [Range(1f, 10f)]
-    public float lineWidth = 2f;
-
     [Header("扩散设置")]
-    [Tooltip("静态时准星中心到线条的距离")]
-    [Range(0f, 50f)]
-    public float baseSpread = 5f;
-
     [Tooltip("射击时最大扩散距离")]
     [Range(10f, 200f)]
     public float maxSpread = 80f;
@@ -61,6 +48,12 @@ public class CrosshairHUD : MonoBehaviour
     [Range(1f, 20f)]
     public float recoverSpeed = 8f;
 
+    // 准星外观（颜色/线长/线宽/间隙/透明度/各部件开关）全部来自
+    // SettingsManager 的全局准星配置，由设置面板控制并持久化，
+    // 本组件不再持有这些字段。外观变化靠配置版本号检测，
+    // 避免每帧无差别刷新 Image 造成界面反复重建
+    private int appliedCrosshairVersion = -1;
+
     private WeaponController currentWeapon;
     private Animator currentWeaponAnimator;
     private float currentSpread;
@@ -72,7 +65,7 @@ public class CrosshairHUD : MonoBehaviour
 
     private void Start()
     {
-        currentSpread = baseSpread;
+        currentSpread = SettingsManager.Crosshair.gap;
         isReloading = false;
         isOutOfAmmo = false;
         reloadIconRotation = 0f;
@@ -99,6 +92,12 @@ public class CrosshairHUD : MonoBehaviour
         if (currentWeapon == null || !currentWeapon.gameObject.activeSelf)
         {
             FindActiveWeapon();
+        }
+
+        // 设置面板改动了准星外观：重新应用
+        if (appliedCrosshairVersion != SettingsManager.CrosshairVersion)
+        {
+            ApplyCrosshairAppearance();
         }
 
         UpdateReloadState();
@@ -160,6 +159,13 @@ public class CrosshairHUD : MonoBehaviour
     {
         bool isFiring = IsWeaponFiring();
 
+        // 动态准星关闭时四条线始终停在静态间隙位置
+        if (!SettingsManager.Crosshair.dynamicCrosshairEnabled)
+        {
+            currentSpread = SettingsManager.Crosshair.gap;
+            return;
+        }
+
         if (isFiring)
         {
             // 射击中：扩散增加
@@ -170,10 +176,10 @@ public class CrosshairHUD : MonoBehaviour
         }
         else
         {
-            // 非射击状态：立即恢复
+            // 非射击状态：向设置的静态间隙恢复
             currentSpread = Mathf.Lerp(
                 currentSpread,
-                baseSpread,
+                SettingsManager.Crosshair.gap,
                 recoverSpeed * Time.deltaTime
             );
         }
@@ -201,21 +207,30 @@ public class CrosshairHUD : MonoBehaviour
             leftLine == null || rightLine == null)
             return;
 
-        // 根据换弹状态和弹匣空状态控制准星可见性
+        CrosshairConfig config = SettingsManager.Crosshair;
+
+        // 根据换弹状态和弹匣空状态控制准星可见性；
+        // 四条线始终全部显示，只有中心点受设置开关控制
         bool shouldShowCrosshair = !isReloading && !isOutOfAmmo;
 
-        // 更新准星可见性
-        if (topLine != null) topLine.enabled = shouldShowCrosshair;
-        if (bottomLine != null) bottomLine.enabled = shouldShowCrosshair;
-        if (leftLine != null) leftLine.enabled = shouldShowCrosshair;
-        if (rightLine != null) rightLine.enabled = shouldShowCrosshair;
+        if (topLine != null)
+            topLine.enabled = shouldShowCrosshair;
+        if (bottomLine != null)
+            bottomLine.enabled = shouldShowCrosshair;
+        if (leftLine != null)
+            leftLine.enabled = shouldShowCrosshair;
+        if (rightLine != null)
+            rightLine.enabled = shouldShowCrosshair;
+
+        if (dot != null)
+            dot.enabled = shouldShowCrosshair && config.dotEnabled;
 
         if (!shouldShowCrosshair)
         {
             return;
         }
 
-        float halfLength = lineLength * 0.5f;
+        float halfLength = config.lineLength * 0.5f;
 
         topLine.rectTransform.anchoredPosition =
             Vector2.up * (currentSpread + halfLength);
@@ -228,6 +243,11 @@ public class CrosshairHUD : MonoBehaviour
 
         rightLine.rectTransform.anchoredPosition =
             Vector2.right * (currentSpread + halfLength);
+
+        if (dot != null && config.dotEnabled)
+        {
+            dot.rectTransform.anchoredPosition = Vector2.zero;
+        }
     }
 
     private void UpdateReloadIcon()
@@ -274,41 +294,48 @@ public class CrosshairHUD : MonoBehaviour
 
     private void ApplyCrosshairAppearance()
     {
+        appliedCrosshairVersion = SettingsManager.CrosshairVersion;
+
+        CrosshairConfig config = SettingsManager.Crosshair;
+
+        // 透明度并入颜色，四条线与中心点统一应用
+        Color color = config.color;
+        color.a = config.opacity;
+
         if (topLine != null)
         {
-            topLine.color = crosshairColor;
-            topLine.rectTransform.sizeDelta = new Vector2(lineWidth, lineLength);
+            topLine.color = color;
+            topLine.rectTransform.sizeDelta =
+                new Vector2(config.lineWidth, config.lineLength);
         }
 
         if (bottomLine != null)
         {
-            bottomLine.color = crosshairColor;
-            bottomLine.rectTransform.sizeDelta = new Vector2(lineWidth, lineLength);
+            bottomLine.color = color;
+            bottomLine.rectTransform.sizeDelta =
+                new Vector2(config.lineWidth, config.lineLength);
         }
 
         if (leftLine != null)
         {
-            leftLine.color = crosshairColor;
-            leftLine.rectTransform.sizeDelta = new Vector2(lineLength, lineWidth);
+            leftLine.color = color;
+            leftLine.rectTransform.sizeDelta =
+                new Vector2(config.lineLength, config.lineWidth);
         }
 
         if (rightLine != null)
         {
-            rightLine.color = crosshairColor;
-            rightLine.rectTransform.sizeDelta = new Vector2(lineLength, lineWidth);
+            rightLine.color = color;
+            rightLine.rectTransform.sizeDelta =
+                new Vector2(config.lineLength, config.lineWidth);
         }
-    }
 
-    public void SetColor(Color color)
-    {
-        crosshairColor = color;
-        ApplyCrosshairAppearance();
-    }
-
-    public void SetSize(float length, float width)
-    {
-        lineLength = length;
-        lineWidth = width;
-        ApplyCrosshairAppearance();
+        if (dot != null)
+        {
+            dot.color = color;
+            // 中心点大小与线条粗细一致
+            dot.rectTransform.sizeDelta =
+                Vector2.one * config.lineWidth;
+        }
     }
 }
