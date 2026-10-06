@@ -171,7 +171,9 @@ public class NPCDialogue : MonoBehaviour
             }
         }
 
+        // 设置面板打开期间禁止触发对话（避免界面叠加）
         if (CanInteract() &&
+            !SettingsUIRoot.IsOpen &&
             Input.GetKeyDown(interactKey))
         {
             DialogueAsset asset = SelectDialogue();

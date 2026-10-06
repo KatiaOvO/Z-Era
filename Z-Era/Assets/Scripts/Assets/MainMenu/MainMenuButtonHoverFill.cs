@@ -111,6 +111,11 @@ public class MainMenuButtonHoverFill : MonoBehaviour,
         buttonAudioSource = gameObject.AddComponent<AudioSource>();
         buttonAudioSource.playOnAwake = false;
         buttonAudioSource.spatialBlend = 0f;
+
+        // 任务面板等界面打开时会设置 AudioListener.pause 全局暂停
+        // 声音，悬停音效标记为忽略全局暂停，UI 音效在暂停期间照常
+        // 发声（同 InventoryInput 的处理）
+        buttonAudioSource.ignoreListenerPause = true;
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -167,6 +172,11 @@ public class MainMenuButtonHoverFill : MonoBehaviour,
         source.playOnAwake = false;
         source.spatialBlend = 0f;
         source.volume = clickSoundVolume;
+
+        // 面板打开期间 AudioListener.pause = true，点击音效标记为
+        // 忽略全局暂停：否则音效会静默到面板关闭才响（表现为延迟）
+        source.ignoreListenerPause = true;
+
         source.PlayOneShot(clickSound);
         Destroy(soundHost, clickSound.length);
     }

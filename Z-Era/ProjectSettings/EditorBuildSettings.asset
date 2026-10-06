@@ -11,4 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/TrainingGround.unity
     guid: 121c3f3d5c60c0347849eb9f43870bf9
+  - enabled: 1
+    path: Assets/Scenes/Prologue.unity
+    guid: 754dcc568a77cec4fa138ca04f140493
   m_configObjects: {}

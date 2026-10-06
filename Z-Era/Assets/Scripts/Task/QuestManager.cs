@@ -55,6 +55,10 @@ public class QuestManager : MonoBehaviour
     private readonly List<QuestAsset> activeQuestOrder =
         new List<QuestAsset>();
 
+    // 已完成任务按完成顺序排列，供任务面板展示。
+    private readonly List<QuestAsset> completedQuestOrder =
+        new List<QuestAsset>();
+
     // 目标进度，键为 "questId:objectiveId"。
     private readonly Dictionary<string, int> objectiveProgress =
         new Dictionary<string, int>();
@@ -439,6 +443,7 @@ public class QuestManager : MonoBehaviour
 
         instance.questStates[asset.QuestId] = QuestState.Completed;
         instance.activeQuestOrder.Remove(asset);
+        instance.completedQuestOrder.Add(asset);
 
         // 完成即写入对话标记（如 TargetDone），驱动对话/后续任务。
         SetFlags(asset.FlagsToSetOnComplete);
@@ -527,6 +532,32 @@ public class QuestManager : MonoBehaviour
             );
 
             return instance.activeQuestOrder;
+        }
+    }
+
+    /// <summary>
+    /// 所有已完成的任务，按完成顺序排列
+    /// （任务面板等 UI 从这里取展示对象）。
+    /// </summary>
+    public static IReadOnlyList<QuestAsset> CompletedQuests
+    {
+        get
+        {
+            if (instance == null)
+            {
+                return Array.Empty<QuestAsset>();
+            }
+
+            // 顺便清理失效引用，保证列表里全是已完成的任务。
+            instance.completedQuestOrder.RemoveAll(
+                quest => quest == null ||
+                    instance.questStates.TryGetValue(
+                        quest.QuestId,
+                        out QuestState state
+                    ) && state != QuestState.Completed
+            );
+
+            return instance.completedQuestOrder;
         }
     }
 }

@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: pr_tk_04_glockshootalltargets
   m_EditorClassIdentifier: 
   questId: pr_tk_04
-  title: 
+  title: "\u51FB\u5012\u573A\u4E0A\u6240\u6709\u9776\u5B50"
   description: 
+  sceneName: 
   objectives:
   - objectiveId: pr_tk_04_glockshootalltargets
     description: "\u5728\u6307\u5B9A\u5C04\u51FB\u533A\u57DF\u51FB\u5012\u573A\u4E0A\u6240\u6709\u9776\u5B50"

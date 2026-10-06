@@ -44,6 +44,11 @@ public class QuestAsset : ScriptableObject
     [SerializeField]
     private string description;
 
+    [Tooltip("所属场景名（与场景文件名一致，如 TrainingGround），" +
+        "留空表示全局任务，所有场景的任务面板都显示")]
+    [SerializeField]
+    private string sceneName;
+
     [Tooltip("目标列表：全部完成时任务自动完成")]
     [SerializeField]
     private List<QuestObjective> objectives =
@@ -86,6 +91,7 @@ public class QuestAsset : ScriptableObject
     public string QuestId => questId;
     public string Title => title;
     public string Description => description;
+    public string SceneName => sceneName;
     public IReadOnlyList<QuestObjective> Objectives => objectives;
     public string[] PrerequisiteQuestIds => prerequisiteQuestIds;
     public string[] RequiredFlags => requiredFlags;

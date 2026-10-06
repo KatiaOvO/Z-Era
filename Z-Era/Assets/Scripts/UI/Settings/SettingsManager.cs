@@ -97,7 +97,7 @@ public class SettingsManager : MonoBehaviour
 
     private const string FrameRateKey = "Settings.FrameRate";
 
-    public static int TargetFrameRate { get; private set; } = 60;
+    public static int TargetFrameRate { get; private set; } = -1;
 
     private ColorAdjustments colorAdjustments;
 
@@ -391,10 +391,10 @@ public class SettingsManager : MonoBehaviour
             ColorUtility.ToHtmlStringRGB(HUDColor));
     }
 
-    /// <summary>读取持久化的帧率上限，首次运行为 60</summary>
+    /// <summary>读取持久化的帧率上限，首次运行为 -1（不限制）</summary>
     public int GetFrameRate()
     {
-        return PlayerPrefs.GetInt(FrameRateKey, 60);
+        return PlayerPrefs.GetInt(FrameRateKey, -1);
     }
 
     /// <summary>

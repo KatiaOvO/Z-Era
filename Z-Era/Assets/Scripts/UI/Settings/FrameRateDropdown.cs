@@ -57,7 +57,7 @@ public class FrameRateDropdown : MonoBehaviour
             SettingsManager.FrameRateValues[index]);
     }
 
-    // 保存的帧率数值 → 下拉框选项序号；未知数值回落到 60 FPS
+    // 保存的帧率数值 → 下拉框选项序号；未知数值回落到"无限制"
     private static int FrameRateToIndex(int fps)
     {
         for (int i = 0; i < SettingsManager.FrameRateValues.Length; i++)
@@ -68,6 +68,6 @@ public class FrameRateDropdown : MonoBehaviour
             }
         }
 
-        return 1;
+        return SettingsManager.FrameRateValues.Length - 1;
     }
 }

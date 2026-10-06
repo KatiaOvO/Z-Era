@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: pr_tk_01_pickweapon
   m_EditorClassIdentifier: 
   questId: pr_tk_01
-  title: 
-  description: 
+  title: "\u62FE\u53D6\u624B\u67AA"
+  description: "\u62FE\u53D6\u6B66\u5668\u7BB1\u4E2D\u7684\u624B\u67AA"
+  sceneName: 
   objectives:
   - objectiveId: pr_tk_01_pickweapon
     description: "\u62FE\u53D6\u6B66\u5668\u7BB1\u91CC\u7684\u624B\u67AA"

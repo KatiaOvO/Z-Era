@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: pr_tk_03_glockshoothead
   m_EditorClassIdentifier: 
   questId: pr_tk_03
-  title: 
+  title: "\u5C04\u51FB\u5934\u90E8"
   description: 
+  sceneName: 
   objectives:
   - objectiveId: pr_tk_03_glockshoothead
     description: "\u5728\u6307\u5B9A\u5C04\u51FB\u533A\u57DF\u547D\u4E2D\u9776\u5B50\u7684\u5934\u90E8"

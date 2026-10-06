@@ -97,6 +97,14 @@ public class DialogueRunner : MonoBehaviour
 
     public static DialogueRunner Instance { get; private set; }
 
+    // 对话是否进行中（CurrentState 非 Idle 即在对话流程内，
+    // 含入场溶解阶段）。供库存、设置等键盘唤起的 UI 入口在
+    // 打开前检查，拒绝对话期间的不合理开启操作；
+    // 关闭类操作不受此限制。无对话系统的场景（如主菜单）
+    // Instance 为空，恒为 false。
+    public static bool IsDialogueActive =>
+        Instance != null && Instance.CurrentState != State.Idle;
+
     // 对话结束时把结束的资产传出去，便于剧情系统接续。
     public event Action<DialogueAsset> DialogueStarted;
     public event Action<DialogueAsset, DialogueAsset.DialogueNode>

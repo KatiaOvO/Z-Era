@@ -16,6 +16,11 @@ using UnityEngine;
 /// </summary>
 public class TrainingGroundHelpTrigger : MonoBehaviour
 {
+    // 帮助画布打开期间为 true：设置面板（ESC）、背包（B）等
+    // 全局键盘监听据此跳过打开输入，避免帮助界面被其他画布
+    // 叠加打断；后续新增的全局快捷键画布也检查同一标志
+    public static bool IsHelpCanvasOpen { get; private set; }
+
     [Header("引用")]
 
     [Tooltip("射击 HelpText 后启用的 HelpInfo Canvas")]
@@ -65,6 +70,16 @@ public class TrainingGroundHelpTrigger : MonoBehaviour
     // 瞬时显示，勾选会自动恢复
     private void Update()
     {
+        // 背景遮罩的 Raycast Target 同步；画布被其他脚本直接
+        // 关闭时这里兜底恢复，保证键盘门控不会卡在打开状态
+        if (IsHelpCanvasOpen &&
+            helpCanvas != null &&
+            !helpCanvas.activeSelf)
+        {
+            RestoreCursor();
+            return;
+        }
+
         if (helpMaskBg == null || helpMaskBg.graphic == null)
         {
             return;
@@ -201,6 +216,8 @@ public class TrainingGroundHelpTrigger : MonoBehaviour
 
         helpCanvas.SetActive(true);
 
+        IsHelpCanvasOpen = true;
+
         // 背景遮罩溶解：先瞬时置为完全显示，再播放溶解消失——
         // 上次的溶解动画结束时遮罩处于完全消失状态，直接 Hide
         // 不会有任何动画，重复打开也能看到完整溶解
@@ -239,6 +256,8 @@ public class TrainingGroundHelpTrigger : MonoBehaviour
     // 关闭按钮（TrainingGroundHelpCloseButton）在关闭时调用
     public void RestoreCursor()
     {
+        IsHelpCanvasOpen = false;
+
         if (hasSavedCursorState)
         {
             Cursor.lockState = previousCursorLockState;

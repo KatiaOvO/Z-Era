@@ -63,7 +63,10 @@ public class SettingTabGroup : MonoBehaviour
         }
     }
 
-    private void Start()
+    // 面板每次被激活（打开）都回到第一个页签（常规）：
+    // 关闭再打开不应停留在上次离开的页签。
+    // 首次激活时 Awake 先于 OnEnable 执行，容器引用已就绪
+    private void OnEnable()
     {
         CollectTabsAndPanels();
 

@@ -87,6 +87,11 @@ public class InventoryInput : MonoBehaviour
 
     private bool isOpen;
 
+    // 任一 InventoryInput 实例打开背包时为 true：设置面板等
+    // 其他键盘入口据此让 ESC 只作用于背包，避免两套全屏界面
+    // 在同一帧抢同一个按键
+    public static bool IsOpen { get; private set; }
+
     // 打开背包时收集的溶解元素，用于判断"溶解加载完成"。
     private readonly List<IUIDissolveEffect>
         dissolveElements = new List<IUIDissolveEffect>();
@@ -151,12 +156,20 @@ public class InventoryInput : MonoBehaviour
     {
         // 序章训练场门控（其他场景 Active=false 不干预）：
         // pr_tk_09 的拾取武器模型目标完成前禁止打开背包，
-        // 关闭操作（B/Esc）不受限制
-        bool togglePressed = Input.GetKeyDown(toggleKey);
+        // 关闭操作（B/Esc）不受限制。
+        // 对话期间同样禁止打开背包（关闭不受限制）；
+        // 训练场帮助画布打开期间同理，避免叠加其他全屏界面。
+        // 设置面板打开期间禁止所有背包键盘操作（B/Esc 均忽略）；
+        // 任务面板打开期间同理（含其 ESC 关闭的当帧）
+        bool togglePressed = Input.GetKeyDown(toggleKey) &&
+            !SettingsUIRoot.IsOpen &&
+            !TaskPanelController.BlocksOtherPanels;
 
         if (togglePressed && !isOpen &&
-            PrologueGameplayGates.Active &&
-            !PrologueGameplayGates.CanOpenInventory)
+            ((PrologueGameplayGates.Active &&
+                !PrologueGameplayGates.CanOpenInventory) ||
+             DialogueRunner.IsDialogueActive ||
+             TrainingGroundHelpTrigger.IsHelpCanvasOpen))
         {
             togglePressed = false;
         }
@@ -165,7 +178,8 @@ public class InventoryInput : MonoBehaviour
         // 背包打开期间 Esc 也可关闭；溶解未完成时关闭输入被忽略。
         if (togglePressed ||
             (isOpen && allowEscapeToClose &&
-                Input.GetKeyDown(KeyCode.Escape)))
+                Input.GetKeyDown(KeyCode.Escape) &&
+                !SettingsUIRoot.IsOpen))
         {
             if (!isOpen || CanCloseInventory())
             {
@@ -313,9 +327,12 @@ public class InventoryInput : MonoBehaviour
         SetInventoryLayer(true);
 
         isOpen = true;
+        IsOpen = true;
     }
 
-    private void CloseInventory()
+    // 供外部系统（设置面板）请求关闭背包；
+    // 内部统一走 SetInventoryOpen(false) 的收尾流程。
+    public void CloseInventory()
     {
         // 先关闭容器，再统一恢复所有临时状态；背景随 Inventory Canvas 直接禁用。
         if (inventoryContainer != null)
@@ -335,6 +352,7 @@ public class InventoryInput : MonoBehaviour
         }
 
         isOpen = false;
+        IsOpen = false;
 
         if (inventoryContainer != null)
         {

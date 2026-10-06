@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Migration.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,7 +9,11 @@ using UnityEngine.SceneManagement;
 /// 职责划分：
 /// - 面板显隐：交给现有的统一组件——主菜单按钮走
 ///   MainMenuPanelOpener（含溶解动画），关闭按钮走
-///   MainMenuPanelCloser，Esc 键由本类直接激活/禁用面板；
+///   MainMenuPanelCloser，其他场景的 Esc 键由本类直接
+///   激活/禁用设置面板；
+/// - Esc 行为按场景分流：主菜单中 ESC 只关闭 PanelContainer
+///   下已打开的面板（无打开面板则无反应，打开面板只能靠按钮），
+///   其他场景中 ESC 开关设置面板；
 /// - 打开面板的副作用（锁定玩家、释放鼠标、暂停世界）：
 ///   由 SettingsPanelSession 的 OnEnable/OnDisable 触发
 ///   BeginSession/EndSession，随面板激活状态自动跟随，
@@ -16,14 +21,40 @@ using UnityEngine.SceneManagement;
 /// 面板按名字 SettingPanelRoot 懒查找（能找到未激活物体）。
 /// 把面板迁移到其他场景时无需改动本类。
 /// </summary>
+// 先于 InventoryInput 等 gameplay 键盘脚本执行：背包打开的
+// 当帧按 ESC 时，本类先看到 IsOpen=true 而不打开设置面板，
+// ESC 随后由 InventoryInput 关闭背包；若顺序相反，背包会先
+// 关闭导致守卫在同一帧被穿透
+[DefaultExecutionOrder(-50)]
 public class SettingsUIRoot : MonoBehaviour
 {
     public static SettingsUIRoot Instance { get; private set; }
 
+    // 设置面板是否打开：库存、NPC 交互等键盘入口在打开前检查
+    // 此标志，设置面板打开期间除 ESC 外的所有键盘操作一律忽略
+    public static bool IsOpen => Instance != null && Instance.isOpen;
+
     // 面板物体在场景中的名字
     private const string PanelName = "SettingPanelRoot";
 
+    // 面板最上层遮罩的名字（挂 UIDissolveImage）：
+    // ESC 打开面板时播放溶解消失，与按钮打开的表现一致
+    private const string MaskImageName = "SettingPanelMaskImage";
+
+    // 遮罩溶解时长（秒）。游戏场景 ESC 打开时的溶解节奏；
+    // 如需调整改这个常量即可
+    private const float MaskDissolveDuration = 1f;
+
+    // 主菜单场景名与面板容器（ESC 行为按场景分流用）
+    private const string MainMenuSceneName = "MainMenu";
+    private const string PanelContainerName = "PanelContainer";
+
+    // 面板容器下以此后缀命名的子物体视为"可被 ESC 关闭的面板"
+    private const string PanelRootSuffix = "PanelRoot";
+
     private GameObject panel;
+    private GameObject panelContainer;
+    private UIDissolveImage maskDissolve;
     private bool isOpen;
 
     // 打开前的鼠标状态，关闭时恢复
@@ -118,19 +149,148 @@ public class SettingsUIRoot : MonoBehaviour
         return false;
     }
 
-    private void Update()
+    // EnsurePanel 找到面板后调用：查找最上层的溶解遮罩
+    // （按名字，可选；找不到只是没有溶解入场动画，面板照常打开）
+    private void FindMaskDissolve()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        maskDissolve = null;
+
+        foreach (UIDissolveImage dissolve in
+            panel.GetComponentsInChildren<UIDissolveImage>(true))
         {
-            if (isOpen)
+            if (dissolve.name == MaskImageName)
             {
-                Close();
-            }
-            else
-            {
-                Open();
+                maskDissolve = dissolve;
+                return;
             }
         }
+    }
+
+    // ESC 打开面板时的溶解入场：与 MainMenuPanelOpener 的表现
+    // 一致——遮罩先瞬时拉回完全显示，再溶解消失露出面板内容；
+    // 面板内所有按钮的悬停表现统一复位（上次关闭可能中断了淡出）
+    private void PrimeMaskDissolve()
+    {
+        if (maskDissolve == null)
+        {
+            return;
+        }
+
+        foreach (MainMenuButtonHoverFill fill in
+            panel.GetComponentsInChildren<MainMenuButtonHoverFill>(true))
+        {
+            fill.ResetVisualState();
+        }
+
+        // 上一轮溶解完成后遮罩物体会被禁用，打开时先启用回来，
+        // 再瞬时拉回完全显示，随后开始溶解消失
+        maskDissolve.gameObject.SetActive(true);
+        maskDissolve.SetVisible(true, true);
+        maskDissolve.duration = MaskDissolveDuration;
+        maskDissolve.Hide();
+    }
+
+    private void Update()
+    {
+        // 遮罩的 Raycast Target 同步（与 MainMenuPanelOpener 相同）：
+        // 溶解中/完全显示时挡住射线，溶解完毕后放行，
+        // 面板内容的滑条、按钮才能被点击
+        if (maskDissolve != null && maskDissolve.graphic != null)
+        {
+            bool shouldBlockRaycast = !maskDissolve.isHideComplete;
+
+            if (maskDissolve.graphic.raycastTarget != shouldBlockRaycast)
+            {
+                maskDissolve.graphic.raycastTarget = shouldBlockRaycast;
+            }
+        }
+
+        if (!Input.GetKeyDown(KeyCode.Escape))
+        {
+            return;
+        }
+
+        // 主菜单：ESC 只负责关闭已打开的面板（含设置面板），
+        // 没有打开的面板时无反应；打开面板只能通过对应按钮
+        if (SceneManager.GetActiveScene().name == MainMenuSceneName)
+        {
+            CloseAnyOpenMenuPanel();
+            return;
+        }
+
+        // 其他场景：ESC 开关设置面板
+        if (isOpen)
+        {
+            Close();
+            return;
+        }
+
+        // 对话期间禁止打开设置面板（与库存输入同一守卫）；
+        // 训练场帮助画布、任务面板打开期间同理；
+        // 背包打开期间 ESC 只作用于背包（由 InventoryInput 关闭）；
+        // BlocksOtherPanels 还覆盖任务面板 ESC 关闭的当帧——
+        // 其执行序位在本类之前，同帧不能把这次 ESC 拿来开设置
+        if (DialogueRunner.IsDialogueActive ||
+            TrainingGroundHelpTrigger.IsHelpCanvasOpen ||
+            InventoryInput.IsOpen ||
+            TaskPanelController.BlocksOtherPanels)
+        {
+            return;
+        }
+
+        Open();
+    }
+
+    // 主菜单：关闭 PanelContainer 下所有处于打开状态的 PanelRoot
+    // 面板（设置/开始游戏/帮助/退出游戏等）。设置面板被关闭时，
+    // 其 OnDisable 会自动触发会话收尾（解锁玩家、恢复时间缩放）
+    private void CloseAnyOpenMenuPanel()
+    {
+        if (!EnsurePanelContainer())
+        {
+            return;
+        }
+
+        foreach (Transform child in panelContainer.transform)
+        {
+            if (child.name.EndsWith(PanelRootSuffix) &&
+                child.gameObject.activeSelf)
+            {
+                child.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    // 懒查找主菜单的面板容器。面板容器复用上一次的缓存引用，
+    // 切场景销毁后自动重新查找
+    private bool EnsurePanelContainer()
+    {
+        if (panelContainer != null)
+        {
+            return true;
+        }
+
+        Transform[] candidates =
+            Resources.FindObjectsOfTypeAll<Transform>();
+
+        foreach (Transform candidate in candidates)
+        {
+            if (candidate.name != PanelContainerName)
+            {
+                continue;
+            }
+
+            // scene.IsValid() 排除未实例化的预制体资产
+            if (!candidate.gameObject.scene.IsValid())
+            {
+                continue;
+            }
+
+            panelContainer = candidate.gameObject;
+            return true;
+        }
+
+        return false;
     }
 
     // Esc 或代码入口：激活面板（会话由面板的 OnEnable 自动开始）
@@ -151,7 +311,9 @@ public class SettingsUIRoot : MonoBehaviour
             return;
         }
 
+        FindMaskDissolve();
         panel.SetActive(true);
+        PrimeMaskDissolve();
     }
 
     // Esc 或代码入口：禁用面板（会话由面板的 OnDisable 自动收尾）
@@ -183,6 +345,10 @@ public class SettingsUIRoot : MonoBehaviour
 
         isOpen = true;
         panel = panelObject;
+
+        // 设置面板压住背包：打开面板时先关闭背包，
+        // 避免两个界面叠在一起
+        FindObjectOfType<InventoryInput>()?.CloseInventory();
 
         LockPlayerControl();
 

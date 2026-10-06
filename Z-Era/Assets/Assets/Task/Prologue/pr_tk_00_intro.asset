@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: pr_tk_00_intro
   m_EditorClassIdentifier: 
   questId: pr_tk_00
-  title: 
-  description: 
+  title: "\u4E0E\u6559\u5B98\u5BF9\u8BDD"
+  description: "\u521D\u6765\u8BAD\u7EC3\u573A\uFF0C\u6709\u4E00\u540D\u6559\u5B98\u5728\u573A\u4E0A\u7B49\u5019\uFF0C\u8FD8\u662F\u5FEB\u53BB\u62A5\u9053\u5427......"
+  sceneName: 
   objectives:
   - objectiveId: pr_tk_00_intro
     description: "\u4E0E\u8BAD\u7EC3\u573A\u65C1\u7684\u6559\u5B98\u5BF9\u8BDD"
