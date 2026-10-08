@@ -8,14 +8,17 @@ using UnityEngine.UI;
 /// <summary>
 /// 全局场景过渡服务：挂在 SwitchScene Canvas 上（单例，跨场景复用）。
 /// TransitionTo(场景名) 的完整流程：
-/// 1. 复位状态（黑屏拉回完全溶解、进度条清零）；
+/// 1. 复位状态（黑屏拉回完全溶解、进度条清零），暂停世界
+///    （Time.timeScale = 0 + AudioListener.pause；溶解、进度条
+///    与提示图标走未缩放时间，暂停下不受影响）；
 /// 2. 黑屏溶解铺满全屏（本脚本上的 Fade Duration 控制时长）；
 /// 3. 异步加载目标场景（allowSceneActivation = false 手动控制激活），
 ///    Filled Image 进度条按 progress / 0.9 映射显示加载进度；
 /// 4. 进度条走满后放行场景激活，等一帧让新场景的 RenderSettings
 ///    生效，再 DynamicGI.UpdateEnvironment() 基于新天空盒重建环境
 ///    光照（运行时切换场景不会自动重算，不重算会出现明暗异常）；
-/// 5. 黑屏溶解消失，Canvas 保持激活待命，等待下一次过渡。
+/// 5. 恢复时间流与全局声音，黑屏溶解消失，Canvas 保持激活待命，
+///    等待下一次过渡。
 /// 单例保证跨场景只有一份：场景重新加载带来的重复副本在 Awake 中
 /// 销毁；本物体通过 DontDestroyOnLoad 跨场景存活。
 /// </summary>
@@ -174,6 +177,12 @@ public class SceneTransitionController : MonoBehaviour
             progressGroup.SetActive(false);
         }
 
+        // 黑屏溶解出现的同一帧暂停世界：旧场景时间流冻结、全局
+        // 声音静音，加载期间玩法与音频都不再推进。溶解、进度条
+        // 与提示图标均使用未缩放时间，暂停下仍正常播放
+        Time.timeScale = 0f;
+        AudioListener.pause = true;
+
         // 用本脚本上的时长覆盖黑屏组件自己的 Duration，
         // 溶解节奏统一由本控制器控制
         fadeImage.duration = fadeDuration;
@@ -245,6 +254,24 @@ public class SceneTransitionController : MonoBehaviour
         yield return null;
 
         DynamicGI.UpdateEnvironment();
+
+        // 新场景已完全激活且仍被黑屏盖住：恢复时间流与全局声音，
+        // 随后才溶解露出新场景。
+        // 这里直接归位而不是还原暂停前的存值：场景卸载时暂停面板
+        // （设置/任务/背包）的收尾已各自恢复过状态，暂停前的存值
+        // 可能残留已随旧场景销毁的面板的暂停状态，照存值还原
+        // 会把新场景卡在暂停里
+        Time.timeScale = 1f;
+        AudioListener.pause = false;
+
+        // 纯 UI 场景（主菜单等）没有玩家控制器：把光标解锁并显示，
+        // 否则从玩法场景返回时会带着锁定的光标进菜单。
+        // 玩法场景不在此处理，其 PlayerController.Start 自会锁定
+        if (FindObjectOfType<PlayerController>() == null)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
 
         // 进度条隐藏，黑屏溶解消失露出新场景
         if (progressGroup != null)

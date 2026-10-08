@@ -175,6 +175,12 @@ public class PrologueController : MonoBehaviour
     [Tooltip("木箱高亮闪烁频率（每秒循环次数）")]
     public float woodBoxBlinkSpeed = 1.5f;
 
+    [Header("序章结束返回主菜单")]
+    [Tooltip("序章全部内容完成后设置的 Flag（由最终对话/任务的 UnityEvent 调 DialogueFlags.SetFlagTrue 置位），每帧检测到它为 true 即切回主菜单")]
+    public string allFinishedFlag = "pr_all_finished";
+    [Tooltip("序章结束后切换的目标场景名（走全局黑屏加载过渡）")]
+    public string menuSceneName = "MainMenu";
+
     // 线性阶段的当前进度
     private Stage stage = Stage.WaitingFlag;
 
@@ -245,7 +251,10 @@ public class PrologueController : MonoBehaviour
         // tk09：武器模型已可拾取，等待玩家打开并关闭背包
         Tk09WaitingInventoryOpen,
         // tk09：背包检查完成、任务完成、Flag 已设置
-        Tk09Finished
+        Tk09Finished,
+        // 射击环节因弹药耗尽中止：靶子已倒下、移动已恢复，
+        // 等当前武器补到弹药后踏板重新高亮
+        OutOfAmmo
     }
 
     // 踏板高亮罩的材质与子物体列表。高亮罩是微放大的透明子物体，
@@ -308,6 +317,19 @@ public class PrologueController : MonoBehaviour
     // 玩家当前是否站在踏板触发器内（处理高亮开始时
     // 玩家已经在区域内的场景，此时不会再触发 Enter 事件）
     private bool stoolPlayerInside;
+
+    // 序章结束切回主菜单只触发一次（场景过渡期间 Update 仍在执行）
+    private bool returnToMenuTriggered;
+
+    // 弹药耗尽中止后，补弹完成时要恢复的高亮阶段（对应被中断的任务）
+    private Stage pendingResumeStage = Stage.HighlightStool;
+
+    // tk04/05/06 立靶序列协程句柄：中止射击环节时停掉，
+    // 防止它收尾时把阶段改回射击
+    private Coroutine standTargetsRoutine;
+
+    // 当前武器缓存：玩家身上处于启用状态的 WeaponController
+    private WeaponController cachedCurrentWeapon;
 
     private void OnEnable()
     {
@@ -437,6 +459,16 @@ public class PrologueController : MonoBehaviour
     void Update()
     {
         Set();
+
+        // 序章全部完成：最终对话/任务把 pr_all_finished 置位后，
+        // 走全局场景过渡切回主菜单。一次性触发，过渡黑屏期间
+        // Update 仍会执行，不加保护会每帧重复调用 TransitionTo
+        if (!returnToMenuTriggered &&
+            DialogueFlags.HasFlag(allFinishedFlag))
+        {
+            returnToMenuTriggered = true;
+            SceneTransitionController.TransitionTo(menuSceneName);
+        }
     }
 
     private void Set()
@@ -653,6 +685,23 @@ public class PrologueController : MonoBehaviour
             knifeHighlightMaterial.SetColor("_HighlightColor", color);
         }
 
+        // 弹药死锁保护：移动被锁定的射击环节里，当前武器弹匣与
+        // 备弹同时为 0 时无法射击也无法完成任务（踩上踏板前就已
+        // 打空也会卡在立靶阶段），中止本次环节——靶子全部倒下、
+        // 恢复移动，玩家可以去补弹
+        if (IsAmmoLockedStage() && !CurrentWeaponHasAmmo())
+        {
+            AbortShootingForAmmo();
+        }
+
+        // 中止后等玩家补弹：当前武器补到弹药（弹匣或备弹任一不为
+        // 0）踏板才重新高亮，玩家踩上后从头开始本任务
+        if (stage == Stage.OutOfAmmo && CurrentWeaponHasAmmo())
+        {
+            StartStoolHighlight();
+            stage = pendingResumeStage;
+        }
+
         // 高亮开始时玩家若已站在触发器内，同样视为进入
         if (stage == Stage.HighlightStool && stoolPlayerInside)
         {
@@ -742,7 +791,7 @@ public class PrologueController : MonoBehaviour
         StopStoolHighlight();
         LockPlayerMovement(true);
         stage = Stage.Tk04TargetsStanding;
-        StartCoroutine(
+        standTargetsRoutine = StartCoroutine(
             StandTargets(Stage.Tk04Shooting, tk04StandInterval));
     }
 
@@ -752,7 +801,7 @@ public class PrologueController : MonoBehaviour
         StopStoolHighlight();
         LockPlayerMovement(true);
         stage = Stage.Tk05TargetsStanding;
-        StartCoroutine(
+        standTargetsRoutine = StartCoroutine(
             StandTargets(Stage.Tk05Shooting, tk05StandInterval));
     }
 
@@ -762,7 +811,7 @@ public class PrologueController : MonoBehaviour
         StopStoolHighlight();
         LockPlayerMovement(true);
         stage = Stage.Tk06TargetsStanding;
-        StartCoroutine(
+        standTargetsRoutine = StartCoroutine(
             StandTargets(Stage.Tk06Shooting, tk06StandInterval));
     }
 
@@ -1020,10 +1069,12 @@ public class PrologueController : MonoBehaviour
             {
                 FinishTaskTk05();
             }
-            else
+            else if (stage == Stage.Tk04Shooting)
             {
                 FinishTaskTk04();
             }
+            // 其余阶段（含弹药耗尽中止后的 OutOfAmmo）不收尾：
+            // 补弹重开后会重新立靶、从头统计，这里完成会错记任务
         }
     }
 
@@ -1823,6 +1874,216 @@ public class PrologueController : MonoBehaviour
         if (playerController != null)
         {
             playerController.movementLocked = locked;
+        }
+    }
+
+    // ===== 弹药死锁保护：锁定移动后的射击环节弹药耗尽 =====
+
+    // 移动被锁定、需要弹药才能推进的任务阶段——这些阶段里
+    // 弹药耗尽会让流程永远卡住
+    private bool IsAmmoLockedStage()
+    {
+        switch (stage)
+        {
+            case Stage.TargetStanding:
+            case Stage.WaitingHits:
+            case Stage.Tk03TargetStanding:
+            case Stage.Tk03WaitingHeadHits:
+            case Stage.Tk04TargetsStanding:
+            case Stage.Tk04Shooting:
+            case Stage.Tk05TargetsStanding:
+            case Stage.Tk05Shooting:
+            case Stage.Tk06TargetsStanding:
+            case Stage.Tk06Shooting:
+            case Stage.Tk07TargetStanding:
+            case Stage.Tk07Shooting:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    // 当前武器：玩家身上处于启用状态的 WeaponController（与
+    // CrosshairHUD 的查找一致，只在缓存失效时重扫，正常帧零开销）
+    private WeaponController GetCurrentWeapon()
+    {
+        if (cachedCurrentWeapon != null &&
+            cachedCurrentWeapon.gameObject.activeSelf)
+        {
+            return cachedCurrentWeapon;
+        }
+
+        cachedCurrentWeapon = null;
+
+        if (playerController == null)
+        {
+            playerController = FindObjectOfType<PlayerController>();
+        }
+
+        if (playerController != null)
+        {
+            foreach (WeaponController weapon in
+                playerController.GetComponentsInChildren<
+                    WeaponController>(true))
+            {
+                if (weapon.gameObject.activeSelf)
+                {
+                    cachedCurrentWeapon = weapon;
+                    break;
+                }
+            }
+        }
+
+        return cachedCurrentWeapon;
+    }
+
+    // 当前武器是否还能推进射击：弹匣或备弹任一不为 0 即可
+    //（能开枪或能换弹）。查不到武器时视为有弹，不中止任务
+    private bool CurrentWeaponHasAmmo()
+    {
+        WeaponController weapon = GetCurrentWeapon();
+
+        if (weapon == null)
+        {
+            return true;
+        }
+
+        return weapon.currentMagazineAmmo > 0 ||
+            weapon.currentCarriedAmmo > 0;
+    }
+
+    // 弹药耗尽中止当前射击环节：靶子全部倒下、恢复移动、进入
+    // 待补弹阶段；补弹后踏板重新高亮，踩上触发器即从头开始本任务
+    private void AbortShootingForAmmo()
+    {
+        // 记下补弹后要恢复的高亮阶段（按被中断的任务对应）
+        switch (stage)
+        {
+            case Stage.TargetStanding:
+            case Stage.WaitingHits:
+                pendingResumeStage = Stage.HighlightStool;
+                break;
+            case Stage.Tk03TargetStanding:
+            case Stage.Tk03WaitingHeadHits:
+                pendingResumeStage = Stage.Tk03HighlightStool;
+                break;
+            case Stage.Tk04TargetsStanding:
+            case Stage.Tk04Shooting:
+                pendingResumeStage = Stage.Tk04HighlightStool;
+                break;
+            case Stage.Tk05TargetsStanding:
+            case Stage.Tk05Shooting:
+                pendingResumeStage = Stage.Tk05HighlightStool;
+                break;
+            case Stage.Tk06TargetsStanding:
+            case Stage.Tk06Shooting:
+                pendingResumeStage = Stage.Tk06HighlightStool;
+                break;
+            default:
+                pendingResumeStage = Stage.Tk07HighlightStool;
+                break;
+        }
+
+        // 任务进度归零：重开任务与重新立靶的本地计数保持一致，
+        // 不会带着中止前的半截进度提前完成
+        ResetTaskProgress(stage);
+
+        stage = Stage.OutOfAmmo;
+
+        // 关闭单靶计数并清掉残留命中，重新立起后从头计
+        if (prologueTarget != null)
+        {
+            prologueTarget.countingEnabled = false;
+            prologueTarget.ResetCounter();
+        }
+
+        // 停掉立靶序列：它收尾时会无条件把阶段改回射击
+        if (standTargetsRoutine != null)
+        {
+            StopCoroutine(standTargetsRoutine);
+            standTargetsRoutine = null;
+        }
+
+        // tk07 长按状态复位（重新立起的收尾也会复位一遍，
+        // 这里先清掉避免中止期间的结算分支被残留标记触发）
+        tk07BurstActive = false;
+        tk07BurstSettling = false;
+
+        // 立起中的靶子从当前角度倒下。立起旋转的收尾判断都以原
+        // 阶段为前提，阶段已改为 OutOfAmmo 会自然失效；倒下旋转
+        // 启动更晚、每帧写入在后，会覆盖残余的立起写入
+        if (targetMain != null)
+        {
+            StartCoroutine(
+                RotateTargetX(
+                    targetMain.localEulerAngles.x,
+                    90f));
+        }
+
+        foreach (PrologueTarget target in tk04Targets)
+        {
+            if (target == null)
+            {
+                continue;
+            }
+
+            Transform targetTransform = target.transform;
+            StartCoroutine(
+                RotateTargetTk04(
+                    targetTransform,
+                    targetTransform.localEulerAngles.x,
+                    90f));
+        }
+
+        LockPlayerMovement(false);
+    }
+
+    // 被中止任务的进度归零（与重新立靶后的本地计数对齐）
+    private void ResetTaskProgress(Stage value)
+    {
+        QuestAsset quest;
+        string objectiveId;
+
+        switch (value)
+        {
+            case Stage.TargetStanding:
+            case Stage.WaitingHits:
+                quest = tk02Quest;
+                objectiveId = tk02ObjectiveId;
+                break;
+            case Stage.Tk03TargetStanding:
+            case Stage.Tk03WaitingHeadHits:
+                quest = tk03Quest;
+                objectiveId = tk03ObjectiveId;
+                break;
+            case Stage.Tk04TargetsStanding:
+            case Stage.Tk04Shooting:
+                quest = tk04Quest;
+                objectiveId = tk04ObjectiveId;
+                break;
+            case Stage.Tk05TargetsStanding:
+            case Stage.Tk05Shooting:
+                quest = tk05Quest;
+                objectiveId = tk05ObjectiveId;
+                break;
+            case Stage.Tk06TargetsStanding:
+            case Stage.Tk06Shooting:
+                quest = tk06Quest;
+                objectiveId = tk06ObjectiveId;
+                break;
+            default:
+                quest = tk07Quest;
+                objectiveId = tk07ObjectiveId;
+                break;
+        }
+
+        if (quest != null)
+        {
+            QuestManager.SetProgress(
+                quest.QuestId,
+                objectiveId,
+                0
+            );
         }
     }
 }

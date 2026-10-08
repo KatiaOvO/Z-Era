@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: pr_tk_08_knifeattack
   m_EditorClassIdentifier: 
   questId: pr_tk_08
-  title: 
-  description: 
+  title: "\u4F7F\u7528\u5315\u9996\u51FB\u5012\u9776\u5B50"
+  description: "\u6309\u7167\u54C8\u73C0\u4E2D\u58EB\u7684\u8981\u6C42\u4F7F\u7528\u5315\u9996\u51FB\u5012\u6240\u6709\u9776\u5B50\u3002"
+  sceneName: 
   objectives:
   - objectiveId: pr_tk_08_knifeattack
     description: "\u4F7F\u7528\u5315\u9996\u51FB\u5012\u8BAD\u7EC3\u573A\u5DE6\u4FA7\u7684\u4E09\u4E2A\u9776\u5B50"

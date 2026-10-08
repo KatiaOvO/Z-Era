@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: pr_tk_05_ak47shootalltargets
   m_EditorClassIdentifier: 
   questId: pr_tk_05
-  title: 
-  description: 
+  title: "\u4F7F\u7528AK47\u51FB\u5012\u6240\u6709\u9776\u5B50"
+  description: "\u6309\u7167\u54C8\u73C0\u4E2D\u58EB\u7684\u8981\u6C42\u62FE\u53D6\u6B66\u5668\u7BB1\u4E2D\u7684AK47\u6B65\u67AA\uFF0C\u5E76\u51FB\u5012\u573A\u4E0A\u7684\u6240\u6709\u9776\u5B50\u3002"
+  sceneName: 
   objectives:
   - objectiveId: pr_tk_05_pickupak47
-    description: "\u62FE\u53D6\u6B66\u5668\u7BB1\u91CC\u7684\u6B65\u67AA"
+    description: "\u62FE\u53D6\u6B66\u5668\u7BB1\u4E2D\u7684\u6B65\u67AA"
     requiredAmount: 1
   - objectiveId: pr_tk_05_ak47shootalltargets
     description: "\u5728\u6307\u5B9A\u5C04\u51FB\u533A\u57DF\u51FB\u5012\u573A\u4E0A\u6240\u6709\u9776\u5B50"

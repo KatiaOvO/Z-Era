@@ -64,6 +64,11 @@ public class CameraRecoilToggle : MonoBehaviour
         AudioSource source = soundHost.AddComponent<AudioSource>();
         source.playOnAwake = false;
         source.spatialBlend = 0f;
+
+        // 世界暂停（设置面板的 AudioListener.pause）期间
+        // 点击音效照常播放
+        source.ignoreListenerPause = true;
+
         source.volume = clickSoundVolume;
         source.PlayOneShot(clickSound);
         Destroy(soundHost, clickSound.length);

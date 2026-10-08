@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: pr_tk_07_recoilcontrol
   m_EditorClassIdentifier: 
   questId: pr_tk_07
-  title: 
-  description: 
+  title: "\u4F7F\u7528AK47\u5B8C\u6210\u538B\u67AA"
+  description: "\u6309\u7167\u54C8\u73C0\u4E2D\u58EB\u7684\u8981\u6C42\u4F7F\u7528AK47\u538B\u67AA\u547D\u4E2D\u9776\u5B5020\u6B21\u3002"
+  sceneName: 
   objectives:
   - objectiveId: pr_tk_07_recoilcontrol
     description: "\u5728\u6307\u5B9A\u5C04\u51FB\u533A\u57DF\u8FDE\u7EED\u547D\u4E2D\u9776\u5B50"

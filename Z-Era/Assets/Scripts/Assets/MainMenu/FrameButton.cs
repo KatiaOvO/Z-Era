@@ -98,6 +98,10 @@ public class FrameButton : MonoBehaviour,
         }
 
         audioSource.playOnAwake = false;
+
+        // 世界暂停（场景过渡/设置面板的 AudioListener.pause）期间
+        // UI 反馈音效照常播放，不随世界一起静音
+        audioSource.ignoreListenerPause = true;
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -146,6 +150,11 @@ public class FrameButton : MonoBehaviour,
         AudioSource source = soundHost.AddComponent<AudioSource>();
         source.playOnAwake = false;
         source.spatialBlend = 0f;
+
+        // 点击可能直接触发场景过渡（过渡即暂停音频），
+        // 点击音效要能穿过黑屏播完
+        source.ignoreListenerPause = true;
+
         source.volume = clickSoundVolume;
         source.PlayOneShot(clickClip);
         Destroy(soundHost, clickClip.length);

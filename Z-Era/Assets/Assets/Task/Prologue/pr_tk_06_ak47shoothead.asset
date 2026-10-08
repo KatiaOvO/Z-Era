@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: pr_tk_06_ak47shoothead
   m_EditorClassIdentifier: 
   questId: pr_tk_06
-  title: 
-  description: 
+  title: "\u4F7F\u7528AK47\u5C04\u51FB\u6240\u6709\u9776\u5B50\u5934\u90E8"
+  description: "\u6309\u7167\u54C8\u73C0\u4E2D\u58EB\u7684\u8981\u6C42\u4F7F\u7528AK47\u5C04\u51FB\u6240\u6709\u9776\u5B50\u5934\u90E8\u3002"
+  sceneName: 
   objectives:
   - objectiveId: pr_tk_06_ak47shoothead
-    description: "\u5728\u6307\u5B9A\u5C04\u51FB\u533A\u57DF\u51FB\u4E2D\u6240\u6709\u9776\u5B50\u7684\u5934\u90E8"
+    description: "\u5728\u6307\u5B9A\u5C04\u51FB\u533A\u57DF\u547D\u4E2D\u6240\u6709\u9776\u5B50\u7684\u5934\u90E8"
     requiredAmount: 9
   - objectiveId: pr_tk_06_talktoharper
     description: "\u5411\u54C8\u73C0\u4E2D\u58EB\u6C47\u62A5"

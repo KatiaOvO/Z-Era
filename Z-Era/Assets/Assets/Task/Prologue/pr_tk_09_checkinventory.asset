@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: pr_tk_09_checkinventory
   m_EditorClassIdentifier: 
   questId: pr_tk_09
-  title: 
-  description: 
+  title: "\u62FE\u53D6\u6B66\u5668\u6A21\u578B"
+  description: "\u6309\u7167\u54C8\u73C0\u4E2D\u58EB\u7684\u8981\u6C42\u62FE\u53D6\u6B66\u5668\u7BB1\u4E2D\u5269\u4E0B\u7684\u6240\u6709\u6B66\u5668\u6A21\u578B\u3002"
+  sceneName: 
   objectives:
   - objectiveId: pr_tk_09_pickweaponmodels
-    description: "\u62FE\u53D6\u6B66\u5668\u7BB1\u4E2D\u7684\u6B66\u5668...\u6A21\u578B"
+    description: "\u62FE\u53D6\u6B66\u5668\u7BB1\u4E2D\u7684\u6B66\u5668\u6A21\u578B"
     requiredAmount: 2
   - objectiveId: pr_tk_09_checkinventory
     description: "\u67E5\u770B\u5F53\u524D\u7684\u5E93\u5B58"
@@ -31,7 +32,8 @@ MonoBehaviour:
   forbiddenFlags: []
   flagsToSetOnAccept:
   - pr_tk_09_pickweaponmodels_unfinished
-  flagsToSetOnComplete: []
+  flagsToSetOnComplete:
+  - pr_all_finished
   onAccept:
     m_PersistentCalls:
       m_Calls: []

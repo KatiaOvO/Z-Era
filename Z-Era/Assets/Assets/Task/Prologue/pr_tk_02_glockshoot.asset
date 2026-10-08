@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: pr_tk_02_glockshoot
   m_EditorClassIdentifier: 
   questId: pr_tk_02
-  title: "\u4F7F\u7528\u624B\u67AA\u5C04\u51FB"
-  description: 
+  title: "\u4F7F\u7528Glock\u51FB\u5012\u9776\u5B50"
+  description: "\u6309\u7167\u54C8\u73C0\u4E2D\u58EB\u7684\u8981\u6C42\u4F7F\u7528Glock\u51FB\u5012\u8BAD\u7EC3\u573A\u4E2D\u95F4\u7684\u9776\u5B50\u3002"
   sceneName: 
   objectives:
   - objectiveId: pr_tk_02_glockshoottarget

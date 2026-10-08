@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   questId: pr_tk_01
   title: "\u62FE\u53D6\u624B\u67AA"
-  description: "\u62FE\u53D6\u6B66\u5668\u7BB1\u4E2D\u7684\u624B\u67AA"
+  description: "\u6309\u7167\u54C8\u73C0\u4E2D\u58EB\u7684\u8981\u6C42\u62FE\u53D6\u6B66\u5668\u7BB1\u4E2D\u7684\u624B\u67AA\u3002"
   sceneName: 
   objectives:
   - objectiveId: pr_tk_01_pickweapon
-    description: "\u62FE\u53D6\u6B66\u5668\u7BB1\u91CC\u7684\u624B\u67AA"
+    description: "\u62FE\u53D6\u6B66\u5668\u7BB1\u4E2D\u7684\u624B\u67AA"
     requiredAmount: 1
   - objectiveId: pr_tk_01_talktoharper
     description: "\u5411\u54C8\u73C0\u4E2D\u58EB\u6C47\u62A5"

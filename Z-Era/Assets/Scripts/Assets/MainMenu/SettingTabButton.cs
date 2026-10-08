@@ -85,6 +85,11 @@ public class SettingTabButton : MonoBehaviour, IPointerClickHandler
         AudioSource source = soundHost.AddComponent<AudioSource>();
         source.playOnAwake = false;
         source.spatialBlend = 0f;
+
+        // 世界暂停（设置面板的 AudioListener.pause）期间
+        // 切页音效照常播放
+        source.ignoreListenerPause = true;
+
         source.volume = clickSoundVolume;
         source.PlayOneShot(clickSound);
         Destroy(soundHost, clickSound.length);

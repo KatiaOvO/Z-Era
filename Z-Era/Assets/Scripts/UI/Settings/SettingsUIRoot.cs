@@ -65,6 +65,7 @@ public class SettingsUIRoot : MonoBehaviour
     // 世界暂停状态：仅游戏场景（存在 Player）打开时暂停
     private bool worldPaused;
     private float previousTimeScale = 1f;
+    private bool previousAudioListenerPause;
 
     // 打开期间被禁用的玩家控制组件，关闭时按原样恢复
     // （组件清单与 DialogueRunner / TrainingGroundControlLock
@@ -363,11 +364,18 @@ public class SettingsUIRoot : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // 游戏场景打开时暂停世界；主菜单（无 Player）不碰时间
+        // 游戏场景打开时暂停世界（时间流 + 全局声音，与任务面板/
+        // 背包一致）；主菜单（无 Player）不碰时间
         if (FindObjectOfType<PlayerController>() != null)
         {
             previousTimeScale = Time.timeScale;
             Time.timeScale = 0f;
+
+            // timeScale = 0 不会停音频，需单独挂起监听器；
+            // 面板自身的音效源带 ignoreListenerPause，不受影响
+            previousAudioListenerPause = AudioListener.pause;
+            AudioListener.pause = true;
+
             worldPaused = true;
         }
     }
@@ -393,6 +401,7 @@ public class SettingsUIRoot : MonoBehaviour
         if (worldPaused)
         {
             Time.timeScale = previousTimeScale;
+            AudioListener.pause = previousAudioListenerPause;
             worldPaused = false;
         }
     }
