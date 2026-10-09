@@ -160,10 +160,12 @@ public class InventoryInput : MonoBehaviour
         // 对话期间同样禁止打开背包（关闭不受限制）；
         // 训练场帮助画布打开期间同理，避免叠加其他全屏界面。
         // 设置面板打开期间禁止所有背包键盘操作（B/Esc 均忽略）；
-        // 任务面板打开期间同理（含其 ESC 关闭的当帧）
+        // 任务面板打开期间同理（含其 ESC 关闭的当帧）；
+        // 提示面板打开期间同理
         bool togglePressed = Input.GetKeyDown(toggleKey) &&
             !SettingsUIRoot.IsOpen &&
-            !TaskPanelController.BlocksOtherPanels;
+            !TaskPanelController.BlocksOtherPanels &&
+            !TipPanelController.IsOpen;
 
         if (togglePressed && !isOpen &&
             ((PrologueGameplayGates.Active &&

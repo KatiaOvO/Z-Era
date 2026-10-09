@@ -415,10 +415,10 @@ public class ComicIntroController : MonoBehaviour, IPointerClickHandler
         TryMarkAllDone();
     }
 
-    // 最后一张图片淡入完成且它的全部文本打印完毕时置位 finished
-    // 并触发完成事件；由淡入与打印两条收尾路径共同调用，先到的
-    // 一方看到另一方未完成会直接返回。画布保持显示，等待玩家
-    // 再点击一次执行 FinishAndClose 收尾
+    // 最后一张图片淡入完成、且它的全部段落都打印完毕时置位
+    // finished 并触发完成事件；由淡入与打印两条收尾路径共同调用，
+    // 先到的一方看到另一方未完成会直接返回。画布保持显示，等待
+    // 玩家再点击一次执行 FinishAndClose 收尾
     private void TryMarkAllDone()
     {
         if (finished ||
@@ -426,6 +426,13 @@ public class ComicIntroController : MonoBehaviour, IPointerClickHandler
             activeImageIndex != comicPanels.Count - 1 ||
             isFading ||
             isTyping)
+        {
+            return;
+        }
+
+        // 最后一张还有未打印的段落：不算完成，
+        // 等玩家点击切到下一段后重新判定
+        if (activeLineIndex + 1 < GetLines(activeImageIndex).Length)
         {
             return;
         }

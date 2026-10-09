@@ -227,14 +227,15 @@ public class SettingsUIRoot : MonoBehaviour
         }
 
         // 对话期间禁止打开设置面板（与库存输入同一守卫）；
-        // 训练场帮助画布、任务面板打开期间同理；
+        // 训练场帮助画布、任务面板、提示面板打开期间同理；
         // 背包打开期间 ESC 只作用于背包（由 InventoryInput 关闭）；
         // BlocksOtherPanels 还覆盖任务面板 ESC 关闭的当帧——
         // 其执行序位在本类之前，同帧不能把这次 ESC 拿来开设置
         if (DialogueRunner.IsDialogueActive ||
             TrainingGroundHelpTrigger.IsHelpCanvasOpen ||
             InventoryInput.IsOpen ||
-            TaskPanelController.BlocksOtherPanels)
+            TaskPanelController.BlocksOtherPanels ||
+            TipPanelController.IsOpen)
         {
             return;
         }
