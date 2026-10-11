@@ -1,4 +1,6 @@
 using System.Collections;
+using Migration.UI;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -9,6 +11,11 @@ using UnityEngine.UI;
 /// 缩放目标应为按钮根物体下的 Image（或其 RectTransform），
 /// 其 Pivot 需为中心，否则会表现为位移而非居中放大。
 /// 可与 MainMenuButtonHoverFill 叠加挂在同一按钮上，互不干扰。
+///
+/// 锁面模式：勾选"锁定"后本按钮全程不跳转，作为盖在跳转按钮
+/// 上方的锁面使用——解锁标记（DialogueFlags）未设置时点击显示
+/// 提示文字，已设置时点击触发 UI 溶解并在溶解完成后禁用自身，
+/// 露出下方的跳转按钮；已溶解的锁面在面板重新打开时保持消失。
 /// </summary>
 public class FrameButton : MonoBehaviour,
     IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
@@ -74,9 +81,55 @@ public class FrameButton : MonoBehaviour,
     [SerializeField]
     private string sceneName;
 
+    [Header("锁定（勾选后本按钮成为锁面，全程不跳转）")]
+
+    [Tooltip("勾选后本按钮全程不跳转：解锁标记未设置时点击显示" +
+        "提示文字，已设置时点击触发 UI 溶解并禁用自身")]
+    [SerializeField]
+    private bool lockEnabled;
+
+    [Tooltip("解锁判定用的全局对话标记（DialogueFlags）；" +
+        "已设置时点击溶解消失，未设置时点击显示提示文字")]
+    [SerializeField]
+    private string unlockFlagName;
+
+    [Tooltip("锁面按钮上挂的溶解组件，留空则自动取同物体或子物体上的")]
+    [SerializeField]
+    private UIDissolveImage dissolve;
+
+    [Tooltip("锁定提示文本（场景中单独创建的 TMP 物体），留空则点击无提示")]
+    [SerializeField]
+    private TMP_Text hintText;
+
+    [Tooltip("提示文字内容，非空时点击会把内容写入提示文本，" +
+        "因此多个锁面按钮可以共用一个文本物体；留空则保留文本现有内容")]
+    [SerializeField]
+    private string hintMessage;
+
+    [Tooltip("提示文字淡入时长（秒），从当前透明度升到 1")]
+    [SerializeField, Min(0f)]
+    private float hintFadeInDuration = 0.3f;
+
+    [Tooltip("提示文字淡出前的停留时长（秒），期间再次点击会重置计时")]
+    [SerializeField, Min(0f)]
+    private float hintHoldDuration = 1.5f;
+
+    [Tooltip("提示文字淡出时长（秒），从当前透明度降到 0")]
+    [SerializeField, Min(0f)]
+    private float hintFadeOutDuration = 0.5f;
+
     private Vector3 baseScale = Vector3.one;
 
     private Coroutine scaleCoroutine;
+
+    private Coroutine hintCoroutine;
+
+    // 溶解已触发：此后点击全部忽略，直到溶解完成禁用自身
+    private bool dissolving;
+
+    // 本次主菜单停留期间已通过点击溶解过：面板重开时保持消失。
+    // 回主菜单（重进场景）后自动复位，锁面重新出现、可再次点击溶解
+    private bool dissolved;
 
     private AudioSource audioSource;
 
@@ -102,6 +155,40 @@ public class FrameButton : MonoBehaviour,
         // 世界暂停（场景过渡/设置面板的 AudioListener.pause）期间
         // UI 反馈音效照常播放，不随世界一起静音
         audioSource.ignoreListenerPause = true;
+
+        // 提示文本若盖在锁面按钮上，不能拦截射线吃掉点击
+        if (hintText != null)
+        {
+            hintText.raycastTarget = false;
+        }
+    }
+
+    private void OnEnable()
+    {
+        // 已点击溶解过的锁面在面板重新打开时不复活：当帧直接禁用，
+        // 发生在渲染前，不会闪一帧，也不重播溶解动画。
+        // 注意不查 flag：flag 为 true 但还没点击溶解时，
+        // 锁面要正常出现，等玩家点击再溶解
+        if (dissolved)
+        {
+            gameObject.SetActive(false);
+        }
+    }
+
+    private void OnDisable()
+    {
+        // 面板整体关闭时收尾：停掉淡入淡出并清透明度，
+        // 避免重开面板时残留半透明旧提示
+        if (hintCoroutine != null)
+        {
+            StopCoroutine(hintCoroutine);
+            hintCoroutine = null;
+        }
+
+        if (hintText != null)
+        {
+            hintText.alpha = 0f;
+        }
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -128,12 +215,160 @@ public class FrameButton : MonoBehaviour,
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        // 锁面按钮全程不跳转：溶解已触发后点击全部忽略
+        if (lockEnabled)
+        {
+            if (dissolving)
+            {
+                return;
+            }
+
+            PlayClickSound();
+
+            if (DialogueFlags.HasFlag(unlockFlagName))
+            {
+                StartDissolve();
+            }
+            else
+            {
+                ShowHint();
+            }
+
+            return;
+        }
+
         PlayClickSound();
 
         if (!string.IsNullOrEmpty(sceneName))
         {
             SceneTransitionController.TransitionTo(sceneName);
         }
+    }
+
+    // 解锁标记未设置时的点击反馈：提示文字从当前透明度淡入，
+    // 停留指定时长后淡出；期间再次点击会重启计时并继续升到 1
+    private void ShowHint()
+    {
+        if (hintText == null)
+        {
+            Debug.LogWarning(
+                "FrameButton：勾选了锁定但未指定提示文本（Hint Text），" +
+                    "点击没有提示。",
+                this
+            );
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(hintMessage))
+        {
+            hintText.text = hintMessage;
+        }
+
+        if (hintCoroutine != null)
+        {
+            StopCoroutine(hintCoroutine);
+        }
+
+        hintCoroutine = StartCoroutine(HintRoutine());
+    }
+
+    private IEnumerator HintRoutine()
+    {
+        // 淡入：从当前透明度升到 1，重复点击时只升不降
+        if (hintFadeInDuration > 0f)
+        {
+            float from = hintText.alpha;
+
+            for (float time = 0f;
+                 time < hintFadeInDuration;
+                 time += Time.unscaledDeltaTime)
+            {
+                hintText.alpha = Mathf.Lerp(
+                    from,
+                    1f,
+                    time / hintFadeInDuration
+                );
+
+                yield return null;
+            }
+        }
+
+        hintText.alpha = 1f;
+
+        // 停留：再次点击会重启整个协程，停留计时随之重置
+        float holdEnd = Time.unscaledTime + hintHoldDuration;
+
+        while (Time.unscaledTime < holdEnd)
+        {
+            yield return null;
+        }
+
+        // 淡出：从当前透明度降到 0
+        if (hintFadeOutDuration > 0f)
+        {
+            float from = hintText.alpha;
+
+            for (float time = 0f;
+                 time < hintFadeOutDuration;
+                 time += Time.unscaledDeltaTime)
+            {
+                hintText.alpha = Mathf.Lerp(
+                    from,
+                    0f,
+                    time / hintFadeOutDuration
+                );
+
+                yield return null;
+            }
+        }
+
+        hintText.alpha = 0f;
+        hintCoroutine = null;
+    }
+
+    // 解锁标记已设置时的点击反馈：播放 UI 溶解，
+    // 完全溶解后禁用自身，露出下方的跳转按钮
+    private void StartDissolve()
+    {
+        if (dissolve == null)
+        {
+            dissolve = GetComponent<UIDissolveImage>();
+
+            if (dissolve == null)
+            {
+                dissolve =
+                    GetComponentInChildren<UIDissolveImage>(true);
+            }
+        }
+
+        dissolving = true;
+        dissolved = true;
+
+        if (dissolve == null)
+        {
+            Debug.LogWarning(
+                "FrameButton：锁面按钮上没有 UIDissolveImage，" +
+                    "跳过溶解直接禁用。",
+                this
+            );
+            gameObject.SetActive(false);
+            return;
+        }
+
+        dissolve.Hide();
+
+        StartCoroutine(DissolveRoutine());
+    }
+
+    private IEnumerator DissolveRoutine()
+    {
+        // 等溶解组件把自己的 Hide 动画播完（未缩放时间）
+        while (dissolve != null && !dissolve.isHideComplete)
+        {
+            yield return null;
+        }
+
+        gameObject.SetActive(false);
     }
 
     // 用独立的临时物体播放点击音效：按钮常随面板整体禁用，
