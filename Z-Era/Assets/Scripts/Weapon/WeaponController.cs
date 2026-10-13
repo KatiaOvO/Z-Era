@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -335,6 +335,38 @@ public class WeaponController : MonoBehaviour
 
     private void OnEnable()
     {
+        // 激活当帧立即把"取出武器"首帧姿势写入模型：
+        // 帧中途 SetActive 的武器其 Update 要到下一帧才运行，
+        // 若不在此处初始化，动画机第一帧评估时武器层权重
+        // 仍是控制器里的默认值 0，不写任何骨骼，
+        // 模型会以预制体原始姿势裸露渲染一帧（视觉上"闪一下"），
+        // 下一帧才进入 TakeOutWeapon 的镜头下方起始姿势。
+        if (animator == null)
+        {
+            animator = GetComponent<Animator>();
+        }
+
+        if (animator != null)
+        {
+            int currentWeaponIndex =
+                (int)currentGunType;
+
+            for (int i = 0; i < gunDatas.Length; i++)
+            {
+                animator.SetLayerWeight(
+                    i + 1,
+                    i == currentWeaponIndex
+                        ? 1f
+                        : 0f
+                );
+            }
+
+            // 推进 0 秒强制立刻评估一次动画机，
+            // 使该层默认状态 TakeOutWeapon 的首帧
+            // （枪位于镜头下方）在激活当帧渲染前生效。
+            animator.Update(0f);
+        }
+
         // 运行时拾取/更换的武器挂到玩家身上后兜底补挂：
         // 忽略武器碰撞体与玩家 CharacterController 的碰撞，
         // 避免朝下瞄准时武器插进地面，CharacterController 的
